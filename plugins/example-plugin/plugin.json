@@ -1,0 +1,27 @@
+{
+  "id": "example-plugin",
+  "name": "Example Plugin",
+  "version": "1.0.0",
+  "apiVersion": "1",
+  "license": "MIT",
+  "description": "Plugin pédagogique : un compteur partagé entre le Serveur, un Connect et l'Interface, servant de modèle aux contributeurs.",
+  "author": { "name": "StreamDesk" },
+  "components": {
+    "server": { "entrypoint": "./server/index.js" },
+    "connect": {
+      "entrypoint": "./connect/index.js",
+      "platforms": ["windows", "linux", "macos"],
+      "architectures": ["x64", "arm64"]
+    },
+    "interface": { "entrypoint": "./interface/index.tsx" }
+  },
+  "contributes": {
+    "actions": ["example.counter.increment", "example.counter.ping"],
+    "events": ["example.counter.changed"],
+    "dataSources": ["example.counter.value"],
+    "widgets": ["example.counter-display"],
+    "presets": ["example.counter-preset"],
+    "themes": []
+  },
+  "permissions": ["plugin.storage", "events.publish", "events.subscribe"]
+}

@@ -1,0 +1,37 @@
+{
+  "name": "streamdesk",
+  "version": "0.1.0",
+  "private": true,
+  "description": "StreamDesk - open source modular touch control platform (Interface / Server / Connect)",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm run build:libs && pnpm --parallel --filter ./apps/* dev",
+    "dev:server": "pnpm run build:libs && pnpm --filter @streamdesk/server dev",
+    "dev:connect": "pnpm run build:libs && pnpm --filter @streamdesk/connect dev",
+    "dev:interface": "pnpm run build:libs && pnpm --filter @streamdesk/interface dev",
+    "build:libs": "pnpm --filter \"./packages/*\" -r --workspace-concurrency=1 build",
+    "build": "pnpm -r --workspace-concurrency=1 build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint . --ext .ts,.tsx",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "clean": "pnpm -r clean"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.47.0",
+    "@types/node": "^20.14.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.3.3",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  },
+  "packageManager": "pnpm@9.7.0"
+}

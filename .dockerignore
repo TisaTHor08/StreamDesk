@@ -1,0 +1,13 @@
+node_modules
+**/node_modules
+**/dist
+**/build
+**/.turbo
+data
+**/*.sqlite
+**/*.sqlite-journal
+.git
+e2e
+playwright-report
+test-results
+coverage

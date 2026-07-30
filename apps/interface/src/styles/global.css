@@ -1,0 +1,28 @@
+@import "@streamdesk/ui-kit/tokens.css";
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family:
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  background: var(--deck-background);
+  color: var(--deck-text);
+  overscroll-behavior: none;
+}
+
+button {
+  font-family: inherit;
+}

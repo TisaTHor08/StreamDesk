@@ -1,0 +1,22 @@
+[Unit]
+Description=StreamDesk Connect
+After=network-online.target streamdesk-server.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=streamdesk
+Group=streamdesk
+WorkingDirectory=/opt/streamdesk/connect
+EnvironmentFile=-/etc/streamdesk/connect.env
+Environment=DATA_DIR=/var/lib/streamdesk-connect
+Environment=PLUGINS_DIR=/opt/streamdesk/plugins
+Environment=SERVER_URL=ws://localhost:8080
+ExecStart=/usr/bin/node /opt/streamdesk/connect/dist/index.js
+Restart=on-failure
+RestartSec=3
+StandardOutput=append:/var/log/streamdesk/connect.log
+StandardError=append:/var/log/streamdesk/connect.log
+
+[Install]
+WantedBy=multi-user.target

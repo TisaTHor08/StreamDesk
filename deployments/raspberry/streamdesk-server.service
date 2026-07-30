@@ -1,0 +1,31 @@
+[Unit]
+Description=StreamDesk Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=streamdesk
+Group=streamdesk
+WorkingDirectory=/opt/streamdesk/server
+EnvironmentFile=-/etc/streamdesk/server.env
+Environment=DATA_DIR=/var/lib/streamdesk
+Environment=PLUGINS_DIR=/opt/streamdesk/plugins
+Environment=INTERFACE_DIST_DIR=/opt/streamdesk/interface-dist
+Environment=HOST=0.0.0.0
+Environment=PORT=8080
+ExecStart=/usr/bin/node /opt/streamdesk/server/dist/index.js
+Restart=on-failure
+RestartSec=3
+StandardOutput=append:/var/log/streamdesk/server.log
+StandardError=append:/var/log/streamdesk/server.log
+
+# Basic hardening (kept conservative — Connect-style local device access is
+# not needed by the Server, so this can be stricter than connect's unit).
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/streamdesk /var/log/streamdesk
+
+[Install]
+WantedBy=multi-user.target

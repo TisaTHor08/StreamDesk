@@ -1,0 +1,26 @@
+{
+  "id": "core-actions",
+  "name": "Core Actions",
+  "version": "1.0.0",
+  "apiVersion": "1",
+  "license": "MIT",
+  "description": "Actions, sources de données et vérifications de base fournies avec StreamDesk (journalisation, délai, ouverture d'URL, statut Connect).",
+  "author": { "name": "StreamDesk" },
+  "components": {
+    "server": { "entrypoint": "./server/index.js" },
+    "connect": {
+      "entrypoint": "./connect/index.js",
+      "platforms": ["windows", "linux", "macos"],
+      "architectures": ["x64", "arm64"]
+    }
+  },
+  "contributes": {
+    "actions": ["core.log.write", "core.delay", "system.url.open", "system.command.safe-example"],
+    "events": [],
+    "dataSources": ["system.hostname", "system.platform", "system.currentTime", "connect.online"],
+    "widgets": [],
+    "presets": [],
+    "themes": []
+  },
+  "permissions": ["network.local", "process.launch"]
+}

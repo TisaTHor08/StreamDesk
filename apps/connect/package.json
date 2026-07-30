@@ -1,0 +1,32 @@
+{
+  "name": "@streamdesk/connect",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "streamdesk-connect": "./dist/index.js"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "rimraf dist",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@streamdesk/shared-types": "workspace:*",
+    "@streamdesk/protocol": "workspace:*",
+    "@streamdesk/plugin-manifest": "workspace:*",
+    "@streamdesk/connect-sdk": "workspace:*",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/ws": "^8.5.12",
+    "rimraf": "^5.0.5",
+    "tsx": "^4.16.5",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  }
+}

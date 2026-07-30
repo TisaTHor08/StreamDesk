@@ -1,0 +1,42 @@
+/**
+ * Design tokens shared by the Deck and Admin surfaces. All standard widgets
+ * must use these custom properties instead of hard-coded colors/spacing so
+ * themes (built-in or community) can override them wholesale.
+ */
+:root,
+[data-streamdesk-theme="dark"] {
+  --deck-background: #101114;
+  --deck-surface: #1b1d22;
+  --deck-text: #f4f5f7;
+  --deck-muted-text: #9a9ea7;
+  --deck-accent: #5b8cff;
+  --deck-danger: #ff5b6a;
+  --deck-success: #34d399;
+
+  --widget-background: #23262d;
+  --widget-active-background: #33405c;
+  --widget-border: #33363f;
+  --widget-radius: 14px;
+  --widget-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+}
+
+[data-streamdesk-theme="light"] {
+  --deck-background: #f2f3f5;
+  --deck-surface: #ffffff;
+  --deck-text: #16181d;
+  --deck-muted-text: #62666f;
+  --deck-accent: #2f5fe0;
+  --deck-danger: #d5313f;
+  --deck-success: #1d9a6c;
+
+  --widget-background: #ffffff;
+  --widget-active-background: #dbe4ff;
+  --widget-border: #e2e4e9;
+  --widget-radius: 14px;
+  --widget-shadow: 0 1px 3px rgba(20, 20, 30, 0.12);
+}

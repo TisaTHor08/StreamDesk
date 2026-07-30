@@ -1,0 +1,10 @@
+{
+  "name": "example-plugin",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Workspace-linking manifest only: this plugin's server/connect entrypoints are plain JS loaded at runtime via dynamic import() (see apps/server/src/plugins/loader.ts and apps/connect/src/plugins/loader.ts), not built through this package.json. It exists so `pnpm install` links @streamdesk/interface-sdk here for interface/index.tsx's type-only import to resolve when apps/interface type-checks it (see apps/interface/tsconfig.json).",
+  "dependencies": {
+    "@streamdesk/interface-sdk": "workspace:*"
+  }
+}
