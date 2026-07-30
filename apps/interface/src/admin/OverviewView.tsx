@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { QrCode } from "@streamdesk/ui-kit";
 import { InstallPwaButton } from "../pwa/InstallPwaButton.js";
 import { api } from "./api.js";
+
+const LOOPBACK_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1", "[::1]"]);
 
 /**
  * "Vue d'ensemble" — the Server's own landing/status dashboard: how many
@@ -9,13 +11,23 @@ import { api } from "./api.js";
  * pairing/discovery flow from spec section 22 — a QR code and copyable
  * URL a new tablet or phone can use to open (and install as a PWA) this
  * same Interface.
+ *
+ * If the operator opened this page via `localhost` (the common case when
+ * launching from the Server's own PC), `window.location.origin` alone
+ * would produce a QR code pointing at "localhost" — meaningless to a
+ * phone or tablet on the same network. When that's detected, this page
+ * asks the Server for its LAN-facing IPv4 addresses and substitutes one
+ * of those in instead, keeping the same port/protocol the page is
+ * actually being served on.
  */
 export function OverviewView() {
   const [interfaceCount, setInterfaceCount] = useState<{ online: number; total: number } | null>(null);
   const [connectCount, setConnectCount] = useState<{ online: number; total: number } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [lanAddresses, setLanAddresses] = useState<string[] | null>(null);
+  const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
 
-  const pairingUrl = window.location.origin;
+  const isLoopback = LOOPBACK_HOSTNAMES.has(window.location.hostname);
 
   useEffect(() => {
     api.listInterfaces().then((rows) =>
@@ -23,6 +35,27 @@ export function OverviewView() {
     );
     api.listConnects().then((rows) => setConnectCount({ online: rows.filter((r) => r.online).length, total: rows.length }));
   }, []);
+
+  useEffect(() => {
+    if (!isLoopback) return;
+    api
+      .lanAddresses()
+      .then(({ addresses }) => {
+        setLanAddresses(addresses);
+        setSelectedAddress((current) => current ?? addresses[0] ?? null);
+      })
+      .catch(() => setLanAddresses([]));
+    // window.location doesn't change during this page's lifetime.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const pairingUrl = useMemo(() => {
+    if (isLoopback && selectedAddress) {
+      const port = window.location.port ? `:${window.location.port}` : "";
+      return `${window.location.protocol}//${selectedAddress}${port}`;
+    }
+    return window.location.origin;
+  }, [isLoopback, selectedAddress]);
 
   async function copyLink() {
     try {
@@ -75,6 +108,46 @@ export function OverviewView() {
             Scannez ce code avec une tablette ou un téléphone sur le même réseau, ou ouvrez le lien
             ci-dessous. Le nouvel écran se connectera automatiquement au Serveur.
           </p>
+
+          {isLoopback && lanAddresses && lanAddresses.length > 1 && (
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 12, color: "var(--deck-muted-text)", display: "block", marginBottom: 4 }}>
+                Ce PC a plusieurs adresses réseau — choisissez celle du réseau utilisé par l'autre appareil :
+              </label>
+              <select
+                value={selectedAddress ?? ""}
+                onChange={(e) => setSelectedAddress(e.target.value)}
+                style={{ fontSize: 13, padding: "4px 8px" }}
+              >
+                {lanAddresses.map((addr) => (
+                  <option key={addr} value={addr}>
+                    {addr}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {isLoopback && lanAddresses === null && (
+            <p style={{ fontSize: 12, color: "var(--deck-muted-text)", marginBottom: 12 }}>
+              Recherche de l'adresse réseau de ce PC...
+            </p>
+          )}
+
+          {isLoopback && lanAddresses !== null && lanAddresses.length === 0 && (
+            <p style={{ fontSize: 12, color: "var(--deck-danger, #d33)", marginBottom: 12 }}>
+              Aucune adresse réseau locale trouvée : le lien ci-dessous ("localhost") ne fonctionnera
+              que depuis ce PC. Vérifiez que ce PC est bien connecté à un réseau Wi-Fi/Ethernet.
+            </p>
+          )}
+
+          {isLoopback && selectedAddress && (
+            <p style={{ fontSize: 12, color: "var(--deck-muted-text)", marginBottom: 12 }}>
+              Vous avez ouvert cette page via "localhost" ; le lien et le code QR utilisent
+              automatiquement l'adresse réseau de ce PC ({selectedAddress}) pour rester accessibles
+              depuis un autre appareil.
+            </p>
+          )}
 
           <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 12 }}>
             <code

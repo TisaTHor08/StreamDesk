@@ -1,3 +1,4 @@
+import { networkInterfaces } from "node:os";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import type { Runtime } from "../../core/runtime.js";
@@ -25,5 +26,23 @@ export async function registerPairingRoutes(app: FastifyInstance, runtime: Runti
 
     const token = pairing.issuePairingToken(parsed.data.role, parsed.data.label, parsed.data.ttlMinutes);
     return reply.code(201).send({ token, expiresInMinutes: parsed.data.ttlMinutes });
+  });
+
+  /**
+   * The Server's own LAN-reachable IPv4 addresses. The Admin "Vue
+   * d'ensemble" page uses this to build the pairing URL/QR code instead of
+   * `window.location.origin` — an operator opening the admin panel via
+   * `localhost` would otherwise generate a QR code pointing at
+   * `localhost`, which means nothing to a phone or tablet on the same
+   * network. Loopback/internal interfaces are deliberately excluded.
+   */
+  app.get("/api/network/lan-addresses", async (_request, reply) => {
+    const addresses: string[] = [];
+    for (const ifaces of Object.values(networkInterfaces())) {
+      for (const iface of ifaces ?? []) {
+        if (iface.family === "IPv4" && !iface.internal) addresses.push(iface.address);
+      }
+    }
+    return reply.send({ addresses });
   });
 }

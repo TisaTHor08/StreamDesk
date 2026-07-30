@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import type { DeckPage } from "@streamdesk/shared-types";
+import type { DeckPage, WidgetInstance } from "@streamdesk/shared-types";
 import { api } from "./api.js";
 
 export function PagesListView() {
@@ -24,7 +24,23 @@ export function PagesListView() {
       .replace(/[̀-ͯ]/g, "")
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/(^-|-$)/g, "");
-    const page = await api.createPage({ name, slug, widgets: [] });
+    // Every page other than "home" must offer a way back to it — added here
+    // up front so a brand-new page is never one accidental save away from
+    // being a dead end, and so it shows up immediately in the editor,
+    // movable like any other widget.
+    const widgets: WidgetInstance[] =
+      slug === "home"
+        ? []
+        : [
+            {
+              id: crypto.randomUUID(),
+              widgetType: "core.navigation",
+              pluginId: "core",
+              position: { column: 0, row: 0, columnSpan: 1, rowSpan: 1 },
+              properties: { label: "Retour", targetSlug: "home" },
+            },
+          ];
+    const page = await api.createPage({ name, slug, widgets });
     navigate(`/admin/pages/${page.id}`);
   }
 

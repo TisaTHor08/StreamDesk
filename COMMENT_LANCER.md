@@ -21,13 +21,13 @@ Un navigateur s'ouvre automatiquement après quelques secondes sur la page d'adm
 
 ## 3. Connecter un autre écran (tablette, téléphone, autre PC)
 
-Important : pour que le QR code et le lien affichés dans **Administration → Vue d'ensemble** fonctionnent depuis un autre appareil, vous devez ouvrir l'admin depuis l'**adresse IP locale de ce PC**, pas `localhost`.
-
-1. Trouvez l'IP locale de ce PC : ouvrez une invite de commandes et tapez `ipconfig`, repérez la ligne **Adresse IPv4** (ex. `192.168.1.23`).
-2. Sur ce PC, ouvrez `http://192.168.1.23:5173/admin` (remplacez par votre IP) au lieu de `localhost`.
-3. Le QR code affiché encode alors cette adresse. Scannez-le depuis l'autre appareil (même réseau Wi-Fi), ou saisissez le lien affiché manuellement.
+1. Sur ce PC, ouvrez `http://localhost:5173/admin` comme d'habitude, onglet **Vue d'ensemble**.
+2. Le QR code et le lien utilisent automatiquement l'adresse réseau de ce PC (pas `localhost`), pour être accessibles depuis un autre appareil. Si ce PC a plusieurs connexions réseau (Wi-Fi + Ethernet, VPN, etc.), un menu permet de choisir la bonne adresse.
+3. Scannez le code depuis l'autre appareil (même réseau Wi-Fi), ou saisissez le lien affiché manuellement.
 4. L'écran s'ouvre sur le Deck et se connecte automatiquement au Serveur.
 5. Optionnel : sur mobile, proposez d'installer l'application (icône « Installer l'application », ou sur iPhone/iPad : Partager → « Sur l'écran d'accueil »).
+
+Si le lien affiché est quand même `localhost` (adresse réseau introuvable), vérifiez que ce PC est bien connecté à un réseau Wi-Fi ou Ethernet, et que le pare-feu Windows autorise Node.js sur les réseaux privés.
 
 ## 4. Si quelque chose ne démarre pas
 

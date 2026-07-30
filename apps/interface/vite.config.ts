@@ -30,6 +30,10 @@ export default defineConfig({
   ],
   server: {
     port: 5173,
+    // Listen on all network interfaces, not just localhost — otherwise a
+    // phone/tablet on the same LAN can never reach the dev server at all,
+    // no matter what address the QR code / pairing link points to.
+    host: true,
     proxy: {
       "/api": { target: SERVER_TARGET, changeOrigin: true },
       "/ws": { target: WS_TARGET, ws: true },

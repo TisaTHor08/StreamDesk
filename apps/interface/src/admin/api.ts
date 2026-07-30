@@ -42,4 +42,6 @@ export const api = {
 
   listConnects: () => request<(ConnectRecord & { online: boolean })[]>("/connects"),
   revokeConnect: (id: string) => request<void>(`/connects/${id}/revoke`, { method: "POST" }),
+
+  lanAddresses: () => request<{ addresses: string[] }>("/network/lan-addresses"),
 };
