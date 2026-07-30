@@ -25,7 +25,8 @@ Three roles, clearly separated:
 Interface and Connect never talk to each other directly — everything
 routes through the Server. See `ARCHITECTURE.md` for the full picture,
 including the ten binding architectural rules and where V1 knowingly
-deviates from a literal reading of the original spec.
+deviates from a literal reading of the original spec. 
+
 
 ## Repository layout
 

@@ -40,9 +40,10 @@ if errorlevel 1 (
     exit /b 1
 )
 
-if not exist "node_modules" (
+if not exist "node_modules\.bin\tsc.cmd" (
     echo.
-    echo Premiere installation des dependances, cela peut prendre plusieurs minutes...
+    echo Installation des dependances, cela peut prendre plusieurs minutes...
+    echo ^(le dossier node_modules existe peut-etre deja mais est incomplet : c'est normal apres une premiere tentative interrompue^)
     echo.
     call pnpm install
     if errorlevel 1 (
@@ -51,9 +52,16 @@ if not exist "node_modules" (
         pause
         exit /b 1
     )
+    if not exist "node_modules\.bin\tsc.cmd" (
+        echo.
+        echo [ERREUR] "pnpm install" s'est termine sans erreur mais node_modules\.bin\tsc.cmd est toujours absent.
+        echo Supprimez le dossier node_modules puis relancez ce fichier.
+        pause
+        exit /b 1
+    )
 ) else (
     echo Dependances deja installees.
-    echo (Pour forcer une reinstallation : supprimez le dossier node_modules)
+    echo ^(Pour forcer une reinstallation complete : supprimez le dossier node_modules^)
 )
 
 echo.
