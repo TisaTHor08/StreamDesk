@@ -11,7 +11,7 @@ type ConnectionContextValue = {
   boundValues: BoundValues;
   notifications: Notification[];
   requestPage(request: { pageId?: string; slug?: string }): void;
-  interact(widgetId: string, trigger: WidgetInteractionTrigger): void;
+  interact(widgetId: string, trigger: WidgetInteractionTrigger, inputOverride?: Record<string, unknown>): void;
   dismissNotification(id: string): void;
 };
 
@@ -66,9 +66,9 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
       boundValues,
       notifications,
       requestPage: (request) => connection.requestPage(request),
-      interact: (widgetId, trigger) => {
+      interact: (widgetId, trigger, inputOverride) => {
         if (!page) return;
-        connection.interact(page.id, widgetId, trigger);
+        connection.interact(page.id, widgetId, trigger, inputOverride);
       },
       dismissNotification: (id) => setNotifications((prev) => prev.filter((n) => n.id !== id)),
     }),

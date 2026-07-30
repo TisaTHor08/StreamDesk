@@ -158,7 +158,14 @@ function sendPageSnapshot(
 
   if (request.pageId) page = runtime.repos.pages.getById(request.pageId);
   else if (request.slug) page = runtime.repos.pages.getBySlug(request.slug);
-  else page = runtime.repos.pages.list()[0] ?? null;
+  else {
+    // No specific page requested (typical on first connect / registration):
+    // land on the admin-configured default page (see /api/settings,
+    // "home" unless changed), falling back to the first page if that slug
+    // no longer resolves (e.g. it was deleted).
+    const defaultSlug = runtime.repos.settings.getDefaultPageSlug();
+    page = runtime.repos.pages.getBySlug(defaultSlug) ?? runtime.repos.pages.list()[0] ?? null;
+  }
 
   const resolvedPage = page ?? emptyPage();
   runtime.connections.setInterfaceCurrentPage(interfaceId, resolvedPage.id);
@@ -188,10 +195,16 @@ async function handleWidgetInteract(
     return;
   }
 
+  // A slider/gauge-style widget reports its live value via `inputOverride`
+  // rather than a fixed, persisted input — the widget still only ever picks
+  // *a value*, never the actionId or target, so routing stays entirely
+  // server-owned (see InterfaceWidgetInteractPayload's doc comment).
+  const input = payload.inputOverride ? { ...interaction.input, ...payload.inputOverride } : interaction.input;
+
   const result = await runtime.router.execute({
     executionId: generateId("exec"),
     actionId: interaction.actionId,
-    input: interaction.input,
+    input,
     target: interaction.target,
     requestedBy: { type: "widget", id: widget.id },
   });

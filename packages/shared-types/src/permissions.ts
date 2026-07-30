@@ -20,6 +20,10 @@ export const PLUGIN_PERMISSIONS = [
   "events.subscribe",
   "plugin.storage",
   "plugin.interop",
+  "system.audio",
+  "system.display",
+  "system.power",
+  "system.network",
 ] as const;
 
 export type PluginPermission = (typeof PLUGIN_PERMISSIONS)[number];

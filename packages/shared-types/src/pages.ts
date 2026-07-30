@@ -19,7 +19,12 @@ export type WidgetBinding = {
   transform?: WidgetBindingTransform;
 };
 
-export type WidgetInteractionTrigger = "press" | "release" | "longPress";
+/**
+ * "change" is for continuous-value widgets (sliders, dials): fired with a
+ * live `inputOverride` as the value moves, rather than in response to a
+ * discrete tap like the other three triggers.
+ */
+export type WidgetInteractionTrigger = "press" | "release" | "longPress" | "change";
 
 /** Wires a widget's user interaction to an action execution. */
 export type WidgetInteraction = {

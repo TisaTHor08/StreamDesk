@@ -44,4 +44,8 @@ export const api = {
   revokeConnect: (id: string) => request<void>(`/connects/${id}/revoke`, { method: "POST" }),
 
   lanAddresses: () => request<{ addresses: string[] }>("/network/lan-addresses"),
+
+  getSettings: () => request<{ defaultPageSlug: string }>("/settings"),
+  updateSettings: (body: { defaultPageSlug: string }) =>
+    request<{ defaultPageSlug: string }>("/settings", { method: "PUT", body: JSON.stringify(body) }),
 };

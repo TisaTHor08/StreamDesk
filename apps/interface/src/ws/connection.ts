@@ -69,8 +69,13 @@ export class ServerConnection {
     );
   }
 
-  interact(pageId: string, widgetId: string, trigger: WidgetInteractionTrigger): void {
-    const payload: InterfaceWidgetInteractPayload = { pageId, widgetId, trigger };
+  interact(
+    pageId: string,
+    widgetId: string,
+    trigger: WidgetInteractionTrigger,
+    inputOverride?: Record<string, unknown>,
+  ): void {
+    const payload: InterfaceWidgetInteractPayload = { pageId, widgetId, trigger, inputOverride };
     this.send(createEnvelope({ type: MESSAGE_TYPES.INTERFACE_WIDGET_INTERACT, source: this.source(), payload }));
   }
 

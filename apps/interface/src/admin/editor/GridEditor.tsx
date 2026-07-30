@@ -2,7 +2,12 @@ import { useRef, type PointerEvent as ReactPointerEvent } from "react";
 import type { DeckPageGrid, GridPosition, WidgetInstance } from "@streamdesk/shared-types";
 import { widgetRegistry } from "../../widgets/registry.js";
 
-const DND_MIME = "application/x-streamdesk-widget-type";
+const DND_MIME = "application/x-streamdesk-palette-item";
+/** MIME type used for the palette's HTML5 drag-and-drop payload (widgets and presets alike). */
+export const PALETTE_DND_MIME = DND_MIME;
+
+/** JSON payload written to `dataTransfer` when dragging an entry out of the widget palette. */
+export type PaletteDragPayload = { kind: "widget" | "preset"; id: string };
 
 type DragState =
   | {
@@ -39,6 +44,7 @@ export type GridEditorProps = {
   onSelect: (id: string | null) => void;
   onChangePosition: (widgetId: string, position: GridPosition) => void;
   onAddWidget: (widgetType: string, at: { column: number; row: number }) => void;
+  onAddPreset: (presetId: string, at: { column: number; row: number }) => void;
 };
 
 /**
@@ -51,7 +57,15 @@ export type GridEditorProps = {
  * operator wants that), matching the "not grid-limited" goal from the
  * platform's own pitch.
  */
-export function GridEditor({ grid, widgets, selectedWidgetId, onSelect, onChangePosition, onAddWidget }: GridEditorProps) {
+export function GridEditor({
+  grid,
+  widgets,
+  selectedWidgetId,
+  onSelect,
+  onChangePosition,
+  onAddWidget,
+  onAddPreset,
+}: GridEditorProps) {
   const canvasRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<DragState | null>(null);
 
@@ -139,13 +153,24 @@ export function GridEditor({ grid, widgets, selectedWidgetId, onSelect, onChange
 
   function handleDrop(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault();
-    const widgetType = e.dataTransfer.getData(DND_MIME);
-    if (!widgetType) return;
+    const raw = e.dataTransfer.getData(DND_MIME);
+    if (!raw) return;
+    let payload: PaletteDragPayload;
+    try {
+      payload = JSON.parse(raw) as PaletteDragPayload;
+    } catch {
+      return;
+    }
+    if (!payload?.id || (payload.kind !== "widget" && payload.kind !== "preset")) return;
     const measured = measureStep();
     if (!measured) return;
     const column = Math.max(0, Math.min(grid.columns - 1, Math.floor((e.clientX - measured.rect.left) / measured.stepX)));
     const row = Math.max(0, Math.floor((e.clientY - measured.rect.top) / measured.stepY));
-    onAddWidget(widgetType, { column, row });
+    if (payload.kind === "widget") {
+      onAddWidget(payload.id, { column, row });
+    } else {
+      onAddPreset(payload.id, { column, row });
+    }
   }
 
   return (
@@ -238,5 +263,3 @@ export function GridEditor({ grid, widgets, selectedWidgetId, onSelect, onChange
     </div>
   );
 }
-
-export const WIDGET_DND_MIME = DND_MIME;

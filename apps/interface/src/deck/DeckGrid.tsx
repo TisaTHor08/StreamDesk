@@ -1,5 +1,5 @@
 import { useRef, type CSSProperties } from "react";
-import type { DeckPage, WidgetInstance } from "@streamdesk/shared-types";
+import type { DeckPage, WidgetInstance, WidgetInteractionTrigger } from "@streamdesk/shared-types";
 import { widgetRegistry } from "../widgets/registry.js";
 import { useConnection } from "../state/ConnectionProvider.js";
 
@@ -17,6 +17,7 @@ function WidgetCell({ widget }: { widget: WidgetInstance }) {
   const { boundValues, interact, requestPage } = useConnection();
   const definition = widgetRegistry.get(widget.widgetType);
   const isNavigation = widget.widgetType === "core.navigation";
+  const isContinuous = definition?.interactionMode === "continuous";
   const longPressFired = useRef(false);
   const longPressTimer = useRef<number>();
 
@@ -54,6 +55,15 @@ function WidgetCell({ widget }: { widget: WidgetInstance }) {
     if (hasInteraction("release")) interact(widget.id, "release");
   };
 
+  // Exposed to the widget component itself (not just the DeckGrid wrapper's
+  // own pointer handlers) so continuous-value widgets — a volume slider,
+  // for instance — can fire an interaction with a live value on their own
+  // schedule, instead of only in response to a single press/release.
+  const fireInteract = (trigger: WidgetInteractionTrigger, inputOverride?: Record<string, unknown>) => {
+    if (!hasInteraction(trigger)) return;
+    interact(widget.id, trigger, inputOverride);
+  };
+
   const handlePointerDown = () => {
     longPressFired.current = false;
     if (!isNavigation && hasInteraction("longPress")) {
@@ -80,7 +90,12 @@ function WidgetCell({ widget }: { widget: WidgetInstance }) {
   const Component = definition.component;
 
   return (
-    <div style={style} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp} onClick={handleClick}>
+    <div
+      style={style}
+      onPointerDown={isContinuous ? undefined : handlePointerDown}
+      onPointerUp={isContinuous ? undefined : handlePointerUp}
+      onClick={isContinuous ? undefined : handleClick}
+    >
       <Component
         widgetId={widget.id}
         properties={widget.properties}
@@ -89,6 +104,7 @@ function WidgetCell({ widget }: { widget: WidgetInstance }) {
         onPress={firePress}
         onRelease={fireRelease}
         onLongPress={fireLongPress}
+        onInteract={fireInteract}
       />
     </div>
   );

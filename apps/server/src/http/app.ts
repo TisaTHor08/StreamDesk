@@ -9,6 +9,7 @@ import { registerPageRoutes } from "./routes/pages.js";
 import { registerPluginRoutes } from "./routes/plugins.js";
 import { registerDeviceRoutes } from "./routes/devices.js";
 import { registerPairingRoutes } from "./routes/pairing.js";
+import { registerSettingsRoutes } from "./routes/settings.js";
 import { registerWebSocketRoutes } from "../ws/ws-server.js";
 
 export async function buildApp(runtime: Runtime, interfaceDistDir?: string): Promise<FastifyInstance> {
@@ -22,6 +23,7 @@ export async function buildApp(runtime: Runtime, interfaceDistDir?: string): Pro
   await registerPluginRoutes(app, runtime);
   await registerDeviceRoutes(app, runtime);
   await registerPairingRoutes(app, runtime);
+  await registerSettingsRoutes(app, runtime);
   await registerWebSocketRoutes(app, runtime);
 
   // Serve the built Interface PWA, when present, so the whole system can

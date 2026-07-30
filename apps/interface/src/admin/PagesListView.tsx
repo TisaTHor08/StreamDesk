@@ -6,6 +6,8 @@ import { api } from "./api.js";
 export function PagesListView() {
   const [pages, setPages] = useState<DeckPage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [defaultPageSlug, setDefaultPageSlug] = useState("home");
+  const [savingDefault, setSavingDefault] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -13,7 +15,18 @@ export function PagesListView() {
       setPages(result);
       setLoading(false);
     });
+    api.getSettings().then((settings) => setDefaultPageSlug(settings.defaultPageSlug));
   }, []);
+
+  async function changeDefaultPage(slug: string) {
+    setDefaultPageSlug(slug);
+    setSavingDefault(true);
+    try {
+      await api.updateSettings({ defaultPageSlug: slug });
+    } finally {
+      setSavingDefault(false);
+    }
+  }
 
   async function createPage() {
     const name = window.prompt("Nom de la nouvelle page ?");
@@ -54,6 +67,44 @@ export function PagesListView() {
           + Nouvelle page
         </button>
       </div>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          marginBottom: 16,
+          padding: "var(--spacing-md)",
+          background: "var(--widget-background)",
+          border: "1px solid var(--widget-border)",
+          borderRadius: "var(--widget-radius)",
+        }}
+      >
+        <label htmlFor="default-page-slug" style={{ fontSize: 13, color: "var(--deck-muted-text)" }}>
+          Page de démarrage (celle affichée par défaut sur le Deck)
+        </label>
+        <select
+          id="default-page-slug"
+          value={defaultPageSlug}
+          onChange={(e) => changeDefaultPage(e.target.value)}
+          disabled={savingDefault || pages.length === 0}
+          style={{
+            background: "var(--deck-background)",
+            border: "1px solid var(--widget-border)",
+            borderRadius: 8,
+            color: "var(--deck-text)",
+            padding: "6px 10px",
+            fontSize: 13,
+          }}
+        >
+          {pages.map((page) => (
+            <option key={page.id} value={page.slug}>
+              {page.name} (/{page.slug})
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {pages.map((page) => (
           <Link

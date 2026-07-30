@@ -1,4 +1,5 @@
 import { activate as activateExamplePlugin } from "../../../../plugins/example-plugin/interface/index.js";
+import { activate as activateWindowsControlPlugin } from "../../../../plugins/windows-control/interface/index.js";
 import { createInterfacePluginContext } from "./context.js";
 
 /**
@@ -10,4 +11,5 @@ import { createInterfacePluginContext } from "./context.js";
  */
 export function registerInterfacePlugins(): void {
   activateExamplePlugin(createInterfacePluginContext("example-plugin", "1.0.0"));
+  activateWindowsControlPlugin(createInterfacePluginContext("windows-control", "1.0.0"));
 }

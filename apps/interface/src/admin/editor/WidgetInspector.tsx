@@ -231,6 +231,7 @@ export function WidgetInspector({ widget, pages, actions, dataSources, onChange,
               <option value="press">press</option>
               <option value="release">release</option>
               <option value="longPress">longPress</option>
+              <option value="change">change (sliders)</option>
             </select>
             <button onClick={() => removeInteraction(index)} style={iconButtonStyle} title="Retirer">
               ✕

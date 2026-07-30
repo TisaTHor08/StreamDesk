@@ -21,7 +21,7 @@ const widgetInputSchema = z.object({
   interactions: z
     .array(
       z.object({
-        trigger: z.enum(["press", "release", "longPress"]),
+        trigger: z.enum(["press", "release", "longPress", "change"]),
         actionId: z.string(),
         input: z.record(z.unknown()).default({}),
         target: z.object({ mode: z.enum(["automatic", "specific"]), connectId: z.string().optional() }).optional(),

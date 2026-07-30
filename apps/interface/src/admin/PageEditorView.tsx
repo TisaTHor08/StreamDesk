@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { ActionDefinition, DataSourceDefinition, DeckPage, GridPosition, WidgetInstance } from "@streamdesk/shared-types";
-import { widgetRegistry } from "../widgets/registry.js";
+import type { InstalledPlugin } from "@streamdesk/plugin-manifest";
+import { widgetRegistry, presetRegistry } from "../widgets/registry.js";
 import { GridEditor } from "./editor/GridEditor.js";
 import { WidgetPalette } from "./editor/WidgetPalette.js";
 import { WidgetInspector } from "./editor/WidgetInspector.js";
+import { CollapsibleSection } from "./editor/CollapsibleSection.js";
 import { api } from "./api.js";
 import { primaryButtonStyle } from "./PagesListView.js";
 
@@ -51,10 +53,14 @@ export function PageEditorView() {
   const [allPages, setAllPages] = useState<DeckPage[]>([]);
   const [actions, setActions] = useState<ActionDefinition[]>([]);
   const [dataSources, setDataSources] = useState<DataSourceDefinition[]>([]);
+  const [plugins, setPlugins] = useState<InstalledPlugin[]>([]);
   const [selectedWidgetId, setSelectedWidgetId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [pageSectionCollapsed, setPageSectionCollapsed] = useState(true);
+  const [gridSectionCollapsed, setGridSectionCollapsed] = useState(true);
+  const [widgetsSectionCollapsed, setWidgetsSectionCollapsed] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -62,7 +68,13 @@ export function PageEditorView() {
     api.listPages().then(setAllPages);
     api.listActions().then(setActions);
     api.listDataSources().then(setDataSources);
+    api.listPlugins().then(setPlugins);
   }, [id]);
+
+  const pluginNames = useMemo(
+    () => Object.fromEntries(plugins.map((p) => [p.manifest.id, p.manifest.name])),
+    [plugins],
+  );
 
   if (!page) return <p>Chargement...</p>;
 
@@ -87,6 +99,35 @@ export function PageEditorView() {
     };
     setPage({ ...page, widgets: [...page.widgets, widget] });
     setSelectedWidgetId(widget.id);
+  }
+
+  /** Expands a registered preset into concrete widget instances, positioned
+   * relative to `at` (or the next free row) using each entry's own `offset`. */
+  function addPreset(presetId: string, at?: { column: number; row: number }) {
+    if (!page) return;
+    const preset = presetRegistry.get(presetId);
+    if (!preset) return;
+    const baseRow = at?.row ?? page.widgets.reduce((max, w) => Math.max(max, w.position.row + w.position.rowSpan), 0);
+    const baseColumn = at?.column ?? 0;
+    const newWidgets: WidgetInstance[] = preset.widgets.map((entry) => {
+      const offset = entry.offset ?? { column: 0, row: 0 };
+      return {
+        id: crypto.randomUUID(),
+        widgetType: entry.widgetType,
+        pluginId: preset.pluginId,
+        position: {
+          column: Math.max(0, Math.min(page.grid.columns - entry.defaultSize.columnSpan, baseColumn + offset.column)),
+          row: Math.max(0, baseRow + offset.row),
+          columnSpan: entry.defaultSize.columnSpan,
+          rowSpan: entry.defaultSize.rowSpan,
+        },
+        properties: entry.properties,
+        bindings: entry.bindings,
+        interactions: entry.interactions,
+      };
+    });
+    setPage({ ...page, widgets: [...page.widgets, ...newWidgets] });
+    setSelectedWidgetId(newWidgets[0]?.id ?? null);
   }
 
   function changePosition(widgetId: string, position: GridPosition) {
@@ -185,16 +226,15 @@ export function PageEditorView() {
       {error && <p style={{ color: "var(--deck-danger)" }}>{error}</p>}
       {notice && <p style={{ color: "var(--deck-accent)" }}>{notice}</p>}
 
-      <div style={{ display: "flex", gap: 16, alignItems: "flex-start", flexWrap: "wrap" }}>
-        <div style={{ width: 220, flexShrink: 0, display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={panelStyle}>
+      <div style={{ display: "flex", gap: 16, alignItems: "stretch", height: "calc(100vh - 160px)", minHeight: 480 }}>
+        <div style={{ width: 260, flexShrink: 0, display: "flex", flexDirection: "column", gap: 10, minHeight: 0 }}>
+          <CollapsibleSection title="Page" collapsed={pageSectionCollapsed} onToggle={() => setPageSectionCollapsed((v) => !v)}>
             <fieldset style={{ border: "none", padding: 0, margin: 0 }}>
-              <legend style={{ fontSize: 13, color: "var(--deck-muted-text)", padding: 0 }}>Page</legend>
               <label style={labelStyle}>
                 Nom
                 <input style={fieldStyle} value={page.name} onChange={(e) => setPage({ ...page, name: e.target.value })} />
               </label>
-              <label style={labelStyle}>
+              <label style={{ ...labelStyle, marginBottom: 0 }}>
                 Slug
                 <input
                   style={fieldStyle}
@@ -204,11 +244,10 @@ export function PageEditorView() {
                 />
               </label>
             </fieldset>
-          </div>
+          </CollapsibleSection>
 
-          <div style={panelStyle}>
+          <CollapsibleSection title="Grille" collapsed={gridSectionCollapsed} onToggle={() => setGridSectionCollapsed((v) => !v)}>
             <fieldset style={{ border: "none", padding: 0, margin: 0 }}>
-              <legend style={{ fontSize: 13, color: "var(--deck-muted-text)", padding: 0 }}>Grille</legend>
               <label style={labelStyle}>
                 Format
                 <select style={fieldStyle} value="phone" disabled>
@@ -255,14 +294,19 @@ export function PageEditorView() {
                 />
               </label>
             </fieldset>
-          </div>
+          </CollapsibleSection>
 
-          <div style={panelStyle}>
-            <WidgetPalette onAdd={(type) => addWidget(type)} />
-          </div>
+          <CollapsibleSection
+            title="Widgets"
+            collapsed={widgetsSectionCollapsed}
+            onToggle={() => setWidgetsSectionCollapsed((v) => !v)}
+            grow
+          >
+            <WidgetPalette onAddWidget={(type) => addWidget(type)} onAddPreset={(presetId) => addPreset(presetId)} pluginNames={pluginNames} />
+          </CollapsibleSection>
         </div>
 
-        <div style={{ flex: "1 1 380px", minWidth: 280 }}>
+        <div style={{ flex: "1 1 380px", minWidth: 280, overflow: "auto" }}>
           <GridEditor
             grid={page.grid}
             widgets={page.widgets}
@@ -270,10 +314,11 @@ export function PageEditorView() {
             onSelect={setSelectedWidgetId}
             onChangePosition={changePosition}
             onAddWidget={addWidget}
+            onAddPreset={addPreset}
           />
         </div>
 
-        <div style={{ width: 320, flexShrink: 0, ...panelStyle }}>
+        <div style={{ width: 320, flexShrink: 0, overflow: "auto", ...panelStyle }}>
           {selectedWidget ? (
             <WidgetInspector
               widget={selectedWidget}

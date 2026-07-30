@@ -1,0 +1,86 @@
+{
+  "id": "windows-control",
+  "name": "Windows Control",
+  "version": "1.0.0",
+  "apiVersion": "1",
+  "license": "MIT",
+  "description": "Contrôle système Windows : fenêtre active, applications en cours, ouverture de fichiers/applications, volume, micro, luminosité, Wi-Fi, périphériques audio, alimentation, touches média, presse-papier, notifications, et widgets de suivi CPU/GPU/RAM/disque.",
+  "author": { "name": "StreamDesk" },
+  "components": {
+    "server": { "entrypoint": "./server/index.js" },
+    "connect": {
+      "entrypoint": "./connect/index.js",
+      "platforms": ["windows"],
+      "architectures": ["x64", "arm64"]
+    },
+    "interface": { "entrypoint": "./interface/index.tsx" }
+  },
+  "contributes": {
+    "actions": [
+      "windows.open",
+      "windows.app.focus",
+      "windows.app.close",
+      "windows.volume.set",
+      "windows.volume.mute.toggle",
+      "windows.mic.volume.set",
+      "windows.mic.mute.toggle",
+      "windows.brightness.set",
+      "windows.wifi.set",
+      "windows.wifi.toggle",
+      "windows.audioDevice.setEnabled",
+      "windows.audioDevice.toggle",
+      "windows.power.lock",
+      "windows.power.sleep",
+      "windows.power.shutdown",
+      "windows.power.restart",
+      "windows.power.signOut",
+      "windows.media.playPause",
+      "windows.media.next",
+      "windows.media.previous",
+      "windows.media.stop",
+      "windows.clipboard.setText",
+      "windows.notification.show"
+    ],
+    "events": [],
+    "dataSources": [
+      "windows.activeWindow.title",
+      "windows.activeWindow.processName",
+      "windows.runningApps",
+      "windows.audio.volume",
+      "windows.audio.muted",
+      "windows.mic.volume",
+      "windows.mic.muted",
+      "windows.brightness",
+      "windows.wifi.enabled",
+      "windows.wifi.connected",
+      "windows.wifi.ssid",
+      "windows.system.cpuUsage",
+      "windows.system.gpuUsage",
+      "windows.system.ramUsage",
+      "windows.system.diskUsage"
+    ],
+    "widgets": [
+      "windows.volumeSlider",
+      "windows.micVolumeSlider",
+      "windows.brightnessSlider",
+      "windows.cpuGauge",
+      "windows.gpuGauge",
+      "windows.ramGauge",
+      "windows.diskGauge",
+      "windows.activeWindowLabel",
+      "windows.wifiStatus"
+    ],
+    "presets": ["windows.systemPanel"],
+    "themes": []
+  },
+  "permissions": [
+    "process.launch",
+    "process.observe",
+    "system.audio",
+    "system.display",
+    "system.power",
+    "system.network",
+    "clipboard.write",
+    "input.keyboard"
+  ]
+}

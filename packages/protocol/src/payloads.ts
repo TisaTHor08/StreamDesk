@@ -27,6 +27,16 @@ export type InterfaceWidgetInteractPayload = {
   pageId: string;
   widgetId: string;
   trigger: WidgetInteractionTrigger;
+  /**
+   * Optional per-interaction override merged over the widget's persisted,
+   * static `interaction.input` before the action executes (override wins on
+   * key conflicts). Exists so a continuous-value widget (a volume/brightness
+   * slider, for instance) can report its live value without the Interface
+   * ever deciding *what action* to call or *why* — it only ever supplies a
+   * value; the Server still owns the actionId/target/routing entirely, so
+   * this does not weaken the "Interface has no business logic" rule.
+   */
+  inputOverride?: Record<string, unknown>;
 };
 
 export type InterfaceHeartbeatPayload = Record<string, never>;

@@ -79,7 +79,7 @@ const widgetBindingSchema = z.object({
 });
 
 const widgetInteractionSchema = z.object({
-  trigger: z.enum(["press", "release", "longPress"]),
+  trigger: z.enum(["press", "release", "longPress", "change"]),
   actionId: z.string(),
   input: z.record(z.unknown()),
   target: actionTargetSchema.optional(),
@@ -158,7 +158,8 @@ export const interfacePageRequestSchema = z.object({
 export const interfaceWidgetInteractSchema = z.object({
   pageId: z.string().min(1),
   widgetId: z.string().min(1),
-  trigger: z.enum(["press", "release", "longPress"]),
+  trigger: z.enum(["press", "release", "longPress", "change"]),
+  inputOverride: z.record(z.unknown()).optional(),
 });
 
 export const interfaceHeartbeatSchema = z.object({}).strict();
