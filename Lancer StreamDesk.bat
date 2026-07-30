@@ -3,21 +3,76 @@ setlocal enabledelayedexpansion
 title StreamDesk
 cd /d "%~dp0"
 
+set "REQUIRED_NODE_MAJOR=22"
+set "PORTABLE_NODE_DIR=%~dp0.tools\node"
+set "NODE_BIN="
+
 echo ============================================
 echo   StreamDesk - Demarrage
 echo ============================================
 echo.
 
-where node >nul 2>nul
-if errorlevel 1 (
-    echo [ERREUR] Node.js n'est pas installe ou pas dans le PATH.
-    echo Installez Node.js 20 LTS depuis https://nodejs.org/ puis relancez ce fichier.
+rem --- 1. Reutiliser une version portable deja telechargee, si elle correspond ---
+if exist "%PORTABLE_NODE_DIR%\node.exe" (
+    for /f "tokens=*" %%v in ('"%PORTABLE_NODE_DIR%\node.exe" -v') do set "PORTABLE_VER=%%v"
+    set "PORTABLE_VER=!PORTABLE_VER:v=!"
+    for /f "delims=." %%m in ("!PORTABLE_VER!") do set "PORTABLE_MAJOR=%%m"
+    if "!PORTABLE_MAJOR!"=="%REQUIRED_NODE_MAJOR%" set "NODE_BIN=%PORTABLE_NODE_DIR%"
+)
+
+rem --- 2. Sinon, utiliser le Node.js du systeme s'il a la bonne version majeure ---
+if not defined NODE_BIN (
+    where node >nul 2>nul
+    if not errorlevel 1 (
+        for /f "tokens=*" %%v in ('node -v') do set "SYS_VER=%%v"
+        set "SYS_VER=!SYS_VER:v=!"
+        for /f "delims=." %%m in ("!SYS_VER!") do set "SYS_MAJOR=%%m"
+        if "!SYS_MAJOR!"=="%REQUIRED_NODE_MAJOR%" (
+            for /f "delims=" %%I in ('where node') do if not defined NODE_BIN set "NODE_BIN=%%~dpI"
+        )
+    )
+)
+
+rem --- 3. Sinon, telecharger automatiquement une version portable (pas d'admin requis) ---
+if not defined NODE_BIN (
+    where node >nul 2>nul
+    if not errorlevel 1 (
+        for /f "tokens=*" %%v in ('node -v') do echo Node.js detecte sur ce PC : %%v ^(version %REQUIRED_NODE_MAJOR% requise pour StreamDesk^)
+    ) else (
+        echo Aucun Node.js detecte sur ce PC.
+    )
+
+    where powershell >nul 2>nul
+    if errorlevel 1 (
+        echo [ERREUR] PowerShell est introuvable, impossible d'installer Node.js automatiquement.
+        echo Installez manuellement Node.js %REQUIRED_NODE_MAJOR% LTS depuis https://nodejs.org/
+        pause
+        exit /b 1
+    )
+
     echo.
+    echo Installation automatique de Node.js %REQUIRED_NODE_MAJOR% LTS ^(portable, dans .tools\node ; n'affecte pas votre installation existante^)...
+    echo Cela telecharge environ 30 Mo depuis nodejs.org...
+    echo.
+    powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0deployments\windows\install-node-portable.ps1" -Major %REQUIRED_NODE_MAJOR% -DestDir "%PORTABLE_NODE_DIR%"
+    if errorlevel 1 (
+        echo.
+        echo [ERREUR] Le telechargement automatique de Node.js a echoue ^(pas d'acces internet ?^).
+        echo Installez manuellement Node.js %REQUIRED_NODE_MAJOR% LTS depuis https://nodejs.org/ puis relancez ce fichier.
+        pause
+        exit /b 1
+    )
+    if exist "%PORTABLE_NODE_DIR%\node.exe" set "NODE_BIN=%PORTABLE_NODE_DIR%"
+)
+
+if not defined NODE_BIN (
+    echo [ERREUR] Impossible d'obtenir Node.js %REQUIRED_NODE_MAJOR%.
     pause
     exit /b 1
 )
 
-for /f "tokens=*" %%v in ('node -v') do echo Node.js detecte : %%v
+set "PATH=%NODE_BIN%;%PATH%"
+for /f "tokens=*" %%v in ('node -v') do echo Node.js utilise : %%v ^(%NODE_BIN%^)
 
 where pnpm >nul 2>nul
 if errorlevel 1 (

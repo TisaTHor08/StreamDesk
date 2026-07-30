@@ -4,7 +4,8 @@
 
 Double-cliquez sur **`Lancer StreamDesk.bat`** à la racine du dossier.
 
-- Premier lancement : le script installe les dépendances (`pnpm install`), ce qui peut prendre plusieurs minutes selon votre connexion.
+- Le script vérifie automatiquement la présence de Node.js 22 (version testée pour StreamDesk). Si votre PC a une autre version ou aucune, il télécharge tout seul une version portable dans `.tools\node` — sans toucher à votre installation existante, sans droits administrateur. Cela évite les erreurs de compilation liées à une version de Node trop récente pour certaines dépendances natives.
+- Premier lancement : installation des dépendances (`pnpm install`), ce qui peut prendre plusieurs minutes selon votre connexion.
 - Lancements suivants : démarrage direct (quelques secondes).
 - Une fenêtre Windows Firewall peut apparaître pour Node.js — autorisez l'accès sur **réseau privé** (nécessaire pour que d'autres appareils du réseau puissent se connecter).
 
