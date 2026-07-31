@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState, type R
 import type { DeckPage, WidgetInteractionTrigger } from "@streamdesk/shared-types";
 import type { ServerNotificationPayload } from "@streamdesk/protocol";
 import { ServerConnection, type BoundValues, type ConnectionState } from "../ws/connection.js";
+import { uuid } from "../lib/uuid.js";
 
 export type Notification = ServerNotificationPayload & { id: string };
 
@@ -57,7 +58,7 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
         setBoundValues((prev) => ({ ...prev, [widgetId]: { ...prev[widgetId], [property]: value } }));
       },
       onNotification: (notification) => {
-        const id = crypto.randomUUID();
+        const id = uuid();
         setNotifications((prev) => [...prev, { ...notification, id }]);
         window.setTimeout(() => {
           setNotifications((prev) => prev.filter((n) => n.id !== id));

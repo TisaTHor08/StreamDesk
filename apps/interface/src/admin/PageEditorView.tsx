@@ -16,6 +16,7 @@ import { WidgetPalette } from "./editor/WidgetPalette.js";
 import { WidgetInspector } from "./editor/WidgetInspector.js";
 import { CollapsibleSection } from "./editor/CollapsibleSection.js";
 import { api } from "./api.js";
+import { uuid } from "../lib/uuid.js";
 import { primaryButtonStyle } from "./PagesListView.js";
 
 const fieldStyle: React.CSSProperties = {
@@ -45,7 +46,7 @@ function ensureBackButton(page: DeckPage): DeckPage {
   if (page.slug === "home") return page;
   if (page.widgets.some((w) => w.widgetType === "core.navigation")) return page;
   const backWidget: WidgetInstance = {
-    id: crypto.randomUUID(),
+    id: uuid(),
     widgetType: "core.navigation",
     pluginId: "core",
     position: { column: 0, row: 0, columnSpan: 1, rowSpan: 1 },
@@ -103,7 +104,7 @@ export function PageEditorView() {
       rowSpan: def?.defaultSize.rowSpan ?? 1,
     };
     const widget: WidgetInstance = {
-      id: crypto.randomUUID(),
+      id: uuid(),
       widgetType,
       pluginId: def?.pluginId ?? "core",
       position,
@@ -124,7 +125,7 @@ export function PageEditorView() {
     const newWidgets: WidgetInstance[] = preset.widgets.map((entry) => {
       const offset = entry.offset ?? { column: 0, row: 0 };
       return {
-        id: crypto.randomUUID(),
+        id: uuid(),
         widgetType: entry.widgetType,
         pluginId: preset.pluginId,
         position: {
@@ -164,7 +165,7 @@ export function PageEditorView() {
     if (!original) return;
     const copy: WidgetInstance = {
       ...original,
-      id: crypto.randomUUID(),
+      id: uuid(),
       position: {
         ...original.position,
         column: Math.max(0, Math.min(page.grid.columns - original.position.columnSpan, original.position.column + 1)),

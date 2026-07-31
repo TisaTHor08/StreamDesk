@@ -9,6 +9,7 @@ import type {
 } from "@streamdesk/shared-types";
 import { ExpressionEditor } from "./ExpressionEditor.js";
 import { VariablesPanel } from "./VariablesPanel.js";
+import { uuid } from "../../lib/uuid.js";
 
 const panelStyle: React.CSSProperties = {
   background: "var(--widget-background)",
@@ -69,7 +70,7 @@ const BLOCK_COLORS: Record<InteractionBlock["kind"], string> = {
 };
 
 function newId(): string {
-  return crypto.randomUUID();
+  return uuid();
 }
 
 function defaultExpressionForSchemaType(type: string | undefined): InteractionExpression {

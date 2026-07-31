@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type { DeckPage, WidgetInstance } from "@streamdesk/shared-types";
 import { api } from "./api.js";
+import { uuid } from "../lib/uuid.js";
 
 export function PagesListView() {
   const [pages, setPages] = useState<DeckPage[]>([]);
@@ -46,7 +47,7 @@ export function PagesListView() {
         ? []
         : [
             {
-              id: crypto.randomUUID(),
+              id: uuid(),
               widgetType: "core.navigation",
               pluginId: "core",
               position: { column: 0, row: 0, columnSpan: 1, rowSpan: 1 },

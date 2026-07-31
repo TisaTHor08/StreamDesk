@@ -1,3 +1,5 @@
+import { uuid } from "../lib/uuid.js";
+
 const STORAGE_KEY = "streamdesk.interface.identity";
 
 export type StoredIdentity = {
@@ -7,7 +9,7 @@ export type StoredIdentity = {
 };
 
 function randomId(): string {
-  return `interface_${crypto.randomUUID().replace(/-/g, "").slice(0, 20)}`;
+  return `interface_${uuid().replace(/-/g, "").slice(0, 20)}`;
 }
 
 export function loadOrCreateIdentity(): StoredIdentity {

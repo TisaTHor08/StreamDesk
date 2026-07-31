@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { ThemeProvider } from "@streamdesk/ui-kit";
+import { ErrorBoundary } from "./ErrorBoundary.js";
 import { ConnectionProvider } from "./state/ConnectionProvider.js";
 import { DeckView } from "./deck/DeckView.js";
 import { AdminLayout } from "./admin/AdminLayout.js";
@@ -11,21 +12,23 @@ import { DevicesView } from "./admin/DevicesView.js";
 
 export function App() {
   return (
-    <ThemeProvider mode="dark">
-      <ConnectionProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<DeckView />} />
-            <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<OverviewView />} />
-              <Route path="pages" element={<PagesListView />} />
-              <Route path="pages/:id" element={<PageEditorView />} />
-              <Route path="plugins" element={<PluginsView />} />
-              <Route path="devices" element={<DevicesView />} />
-            </Route>
-          </Routes>
-        </BrowserRouter>
-      </ConnectionProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider mode="dark">
+        <ConnectionProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<DeckView />} />
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<OverviewView />} />
+                <Route path="pages" element={<PagesListView />} />
+                <Route path="pages/:id" element={<PageEditorView />} />
+                <Route path="plugins" element={<PluginsView />} />
+                <Route path="devices" element={<DevicesView />} />
+              </Route>
+            </Routes>
+          </BrowserRouter>
+        </ConnectionProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
