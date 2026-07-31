@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type {
   ActionDefinition,
+  ConnectRecord,
   DataSourceDefinition,
   DeckPage,
   InteractionBlock,
@@ -74,6 +75,7 @@ export type WidgetInspectorProps = {
   actions: ActionDefinition[];
   dataSources: DataSourceDefinition[];
   variables: InteractionVariable[];
+  connects: (ConnectRecord & { online: boolean })[];
   pluginNames: Record<string, string>;
   onChange: (patch: Partial<WidgetInstance>) => void;
   onDelete: () => void;
@@ -100,6 +102,7 @@ export function WidgetInspector({
   actions,
   dataSources,
   variables,
+  connects,
   pluginNames,
   onChange,
   onDelete,
@@ -143,7 +146,7 @@ export function WidgetInspector({
   const availableTriggers: WidgetInteractionTrigger[] =
     definition?.interactionMode === "continuous" ? ["change"] : DISCRETE_TRIGGERS;
 
-  const editorCtx: BlockEditorContext = { actions, dataSources, variables, pluginNames };
+  const editorCtx: BlockEditorContext = { actions, dataSources, variables, connects, pluginNames };
 
   return (
     <div>

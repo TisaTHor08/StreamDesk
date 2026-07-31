@@ -3,6 +3,7 @@ import {
   createEnvelope,
   tryParseEnvelope,
   type InterfaceWidgetInteractPayload,
+  type ServerErrorPayload,
   type ServerInterfaceAcceptedPayload,
   type ServerNotificationPayload,
   type ServerPageSnapshotPayload,
@@ -112,11 +113,21 @@ export class ServerConnection {
     let json: unknown;
     try {
       json = JSON.parse(raw);
-    } catch {
+    } catch (error) {
+      console.error("[StreamDesk] Message WebSocket illisible (JSON invalide)", error, raw);
       return;
     }
     const parsed = tryParseEnvelope(json);
-    if (!parsed.ok) return;
+    if (!parsed.ok) {
+      // A message that fails validation here (e.g. a Server/Interface
+      // protocol version mismatch after only one side was updated) used to
+      // vanish silently — the Interface just never got e.g. its page
+      // snapshot, with nothing on screen to explain why. Logging it is the
+      // difference between "black screen, no idea why" and an actionable
+      // console error.
+      console.error("[StreamDesk] Message WebSocket rejeté par la validation du protocole", parsed.error, json);
+      return;
+    }
 
     const envelope = parsed.envelope;
     switch (envelope.type) {
@@ -137,6 +148,18 @@ export class ServerConnection {
       case MESSAGE_TYPES.SERVER_WIDGET_STATE_UPDATE: {
         const payload = envelope.payload as ServerWidgetStateUpdatePayload;
         this.listener.onWidgetValue?.(payload.widgetId, payload.property, payload.value);
+        break;
+      }
+      case MESSAGE_TYPES.SERVER_ERROR: {
+        // Previously fell into the silent `default` branch below — a
+        // rejected message (e.g. malformed register, unknown widget) would
+        // just vanish with nothing on screen to explain a stuck/blank
+        // Interface. Surfaced as a notification (visible) in addition to
+        // the console log already emitted by handleMessage's parse-failure
+        // branch, since a SERVER_ERROR is itself a validly-parsed message.
+        const payload = envelope.payload as ServerErrorPayload;
+        console.error("[StreamDesk] Erreur reçue du Serveur", payload);
+        this.listener.onNotification?.({ level: "error", message: `Erreur serveur (${payload.code}) : ${payload.message}` });
         break;
       }
       case MESSAGE_TYPES.SERVER_NOTIFICATION: {

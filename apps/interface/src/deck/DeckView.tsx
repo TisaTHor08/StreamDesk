@@ -1,10 +1,28 @@
+import { useEffect, useState } from "react";
 import { ConnectionBadge } from "@streamdesk/ui-kit";
 import { useConnection } from "../state/ConnectionProvider.js";
 import { DeckGrid } from "./DeckGrid.js";
 import { InstallPwaButton } from "../pwa/InstallPwaButton.js";
 
+// If the socket reports "connected" but no page snapshot has arrived after
+// this long, something is wrong beyond ordinary network latency (e.g. a
+// rejected/malformed message that the Server logged but never resent) —
+// worth telling the person looking at the screen instead of leaving them
+// staring at an unexplained blank main area forever.
+const STUCK_AFTER_MS = 6000;
+
 export function DeckView() {
   const { state, page, notifications, dismissNotification } = useConnection();
+  const [stuck, setStuck] = useState(false);
+
+  useEffect(() => {
+    if (state !== "connected" || page) {
+      setStuck(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setStuck(true), STUCK_AFTER_MS);
+    return () => window.clearTimeout(timer);
+  }, [state, page]);
 
   return (
     <div style={{ height: "100dvh", width: "100vw", background: "var(--deck-background)", display: "flex", flexDirection: "column" }}>
@@ -25,9 +43,33 @@ export function DeckView() {
       </header>
 
       <main style={{ flex: 1, overflow: "auto" }}>
-        {state !== "connected" && !page && (
-          <div style={{ display: "flex", height: "100%", alignItems: "center", justifyContent: "center", color: "var(--deck-muted-text)" }}>
-            Connexion au serveur...
+        {!page && (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 6,
+              height: "100%",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--deck-muted-text)",
+              textAlign: "center",
+              padding: "var(--spacing-lg)",
+            }}
+          >
+            {state !== "connected" ? (
+              <span>Connexion au serveur...</span>
+            ) : stuck ? (
+              <>
+                <span>Connecté, mais aucune page reçue.</span>
+                <span style={{ fontSize: 12 }}>
+                  Rechargez cette page. Si le problème persiste, ouvrez la console du navigateur (elle contient le
+                  détail de l'erreur) et vérifiez la page de démarrage dans l'administration.
+                </span>
+              </>
+            ) : (
+              <span>Chargement de la page...</span>
+            )}
           </div>
         )}
         {page && <DeckGrid page={page} />}

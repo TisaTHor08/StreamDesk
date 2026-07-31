@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type {
   ActionDefinition,
+  ConnectRecord,
   DataSourceDefinition,
   DeckPage,
   GridPosition,
@@ -61,6 +62,7 @@ export function PageEditorView() {
   const [actions, setActions] = useState<ActionDefinition[]>([]);
   const [dataSources, setDataSources] = useState<DataSourceDefinition[]>([]);
   const [variables, setVariables] = useState<InteractionVariable[]>([]);
+  const [connects, setConnects] = useState<(ConnectRecord & { online: boolean })[]>([]);
   const [plugins, setPlugins] = useState<InstalledPlugin[]>([]);
   const [selectedWidgetId, setSelectedWidgetId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -77,6 +79,7 @@ export function PageEditorView() {
     api.listActions().then(setActions);
     api.listDataSources().then(setDataSources);
     api.listVariables().then(setVariables);
+    api.listConnects().then(setConnects);
     api.listPlugins().then(setPlugins);
   }, [id]);
 
@@ -335,6 +338,7 @@ export function PageEditorView() {
               actions={actions}
               dataSources={dataSources}
               variables={variables}
+              connects={connects}
               pluginNames={pluginNames}
               onChange={(patch) => updateWidget(selectedWidget.id, patch)}
               onDelete={() => removeWidget(selectedWidget.id)}

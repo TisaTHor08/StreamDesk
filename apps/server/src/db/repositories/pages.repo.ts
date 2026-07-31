@@ -42,7 +42,20 @@ function literalExpression(value: unknown): InteractionExpression {
  * `{trigger, blocks: [{kind:"action", ...}]}` script, so pages created
  * before this feature keep working exactly as before without the operator
  * having to redo anything. New pages are already saved in the new shape,
- * so this is a no-op once a page has been re-saved. */
+ * so this is a no-op once a page has been re-saved.
+ *
+ * "change" is a special case: it's only ever fired by continuous widgets
+ * (sliders/dials — see interactionMode: "continuous"), and in the old
+ * system its `input` was never really a value — it was a placeholder
+ * default (e.g. `{ level: 50 }`) that the old `handleWidgetInteract`
+ * *always* overwrote with the live `inputOverride` the widget sent on that
+ * exact call (`{ ...interaction.input, ...payload.inputOverride }`). If
+ * this migration turned that placeholder into a fixed `literal` block
+ * input like every other trigger's, every migrated slider would freeze at
+ * whatever value it happened to have when last saved instead of tracking
+ * the live drag — so for "change" specifically, each key becomes a
+ * `triggerInput` read instead, matching what actually used to happen at
+ * runtime. */
 function normalizeInteractions(page: DeckPage): DeckPage {
   let changed = false;
   const widgets = page.widgets.map((widget) => {
@@ -51,7 +64,9 @@ function normalizeInteractions(page: DeckPage): DeckPage {
     const interactions = widget.interactions.map((interaction) => {
       if (!isLegacyInteraction(interaction)) return interaction;
       const input: Record<string, InteractionExpression> = {};
-      for (const [key, value] of Object.entries(interaction.input ?? {})) input[key] = literalExpression(value);
+      for (const [key, value] of Object.entries(interaction.input ?? {})) {
+        input[key] = interaction.trigger === "change" ? { kind: "triggerInput", field: key } : literalExpression(value);
+      }
       return {
         trigger: interaction.trigger,
         blocks: [{ id: randomUUID(), kind: "action" as const, actionId: interaction.actionId, input, target: interaction.target }],

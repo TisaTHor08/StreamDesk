@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type {
   ActionDefinition,
+  ConnectRecord,
   DataSourceDefinition,
   InteractionBlock,
   InteractionExpression,
@@ -107,6 +108,7 @@ export type BlockEditorContext = {
   actions: ActionDefinition[];
   dataSources: DataSourceDefinition[];
   variables: InteractionVariable[];
+  connects: (ConnectRecord & { online: boolean })[];
   pluginNames: Record<string, string>;
 };
 
@@ -441,6 +443,57 @@ function ActionBlockBody({
         </div>
       ))}
       {fields.length === 0 && <span style={{ fontSize: 11, color: "var(--deck-muted-text)" }}>Cette action ne prend aucun paramètre.</span>}
+
+      {action && action.executionLocation === "connect" && <ConnectTargetField block={block} ctx={ctx} action={action} onChange={onChange} />}
+    </div>
+  );
+}
+
+/**
+ * Only shown for actions that run on a Connect (not a server-side action —
+ * those have no "where" to pick). "Automatique" (the default on every new
+ * action block) already picks the sole online Connect that declares this
+ * action when there's only one — see ActionRouter.resolveTarget on the
+ * Server — so this is only really needed once more than one Connect could
+ * plausibly run the same action and the operator wants to pin it to a
+ * specific machine.
+ */
+function ConnectTargetField({
+  block,
+  ctx,
+  action,
+  onChange,
+}: {
+  block: Extract<InteractionBlock, { kind: "action" }>;
+  ctx: BlockEditorContext;
+  action: ActionDefinition;
+  onChange: (block: InteractionBlock) => void;
+}) {
+  const compatible = ctx.connects.filter((c) => c.capabilities.some((cap) => cap.actions.includes(action.id)));
+  const mode = block.target?.mode ?? "automatic";
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+      <span style={{ fontSize: 11, color: "var(--deck-muted-text)", minWidth: 70 }}>Connect</span>
+      <select
+        style={fieldStyle}
+        value={mode === "specific" ? (block.target?.connectId ?? "") : "automatic"}
+        onChange={(e) => {
+          const value = e.target.value;
+          onChange({ ...block, target: value === "automatic" ? { mode: "automatic" } : { mode: "specific", connectId: value } });
+        }}
+      >
+        <option value="automatic">Automatique (recommandé)</option>
+        {ctx.connects.map((c) => (
+          <option key={c.connectId} value={c.connectId}>
+            {c.name} {c.online ? "" : "(hors ligne)"}
+            {compatible.some((x) => x.connectId === c.connectId) ? "" : " — ne déclare pas cette action"}
+          </option>
+        ))}
+      </select>
+      {ctx.connects.length === 0 && (
+        <span style={{ fontSize: 11, color: "var(--deck-muted-text)" }}>Aucun Connect connu — "Automatique" échouera tant qu'aucun ne s'est connecté.</span>
+      )}
     </div>
   );
 }
@@ -451,7 +504,7 @@ const TRIGGER_LABELS: Record<string, string> = {
   press: "Appui",
   release: "Relâchement",
   longPress: "Appui long",
-  change: "Changement (curseur)",
+  change: "Changement (curseur / interrupteur)",
 };
 
 export function InteractionScriptEditor({
