@@ -3,6 +3,7 @@ import { ButtonWidget } from "./ButtonWidget.js";
 import { TextWidget } from "./TextWidget.js";
 import { NavigationWidget } from "./NavigationWidget.js";
 import { ContainerWidget } from "./ContainerWidget.js";
+import { ToggleWidget } from "./ToggleWidget.js";
 
 /** Registers StreamDesk's standard widgets (section 4.2 of the spec). */
 export function registerBuiltinWidgets(): void {
@@ -55,5 +56,22 @@ export function registerBuiltinWidgets(): void {
     },
     defaultSize: { columnSpan: 2, rowSpan: 2 },
     component: ContainerWidget,
+  });
+
+  context.widgets.register({
+    type: "core.toggle",
+    pluginId: "core",
+    displayName: "Interrupteur",
+    propertiesSchema: {
+      type: "object",
+      properties: {
+        label: { type: "string" },
+        icon: { type: "object", format: "icon" },
+        style: { type: "string", enum: ["button", "switch"] },
+      },
+    },
+    defaultSize: { columnSpan: 1, rowSpan: 1 },
+    component: ToggleWidget,
+    interactionMode: "continuous",
   });
 }

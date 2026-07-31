@@ -26,6 +26,7 @@ export function OverviewView() {
   const [copied, setCopied] = useState(false);
   const [lanAddresses, setLanAddresses] = useState<string[] | null>(null);
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
+  const [defaultPageSlug, setDefaultPageSlug] = useState<string | null>(null);
 
   const isLoopback = LOOPBACK_HOSTNAMES.has(window.location.hostname);
 
@@ -34,6 +35,7 @@ export function OverviewView() {
       setInterfaceCount({ online: rows.filter((r) => r.online).length, total: rows.length }),
     );
     api.listConnects().then((rows) => setConnectCount({ online: rows.filter((r) => r.online).length, total: rows.length }));
+    api.getSettings().then((s) => setDefaultPageSlug(s.defaultPageSlug));
   }, []);
 
   useEffect(() => {
@@ -50,12 +52,18 @@ export function OverviewView() {
   }, []);
 
   const pairingUrl = useMemo(() => {
-    if (isLoopback && selectedAddress) {
-      const port = window.location.port ? `:${window.location.port}` : "";
-      return `${window.location.protocol}//${selectedAddress}${port}`;
-    }
-    return window.location.origin;
-  }, [isLoopback, selectedAddress]);
+    const base =
+      isLoopback && selectedAddress
+        ? `${window.location.protocol}//${selectedAddress}${window.location.port ? `:${window.location.port}` : ""}`
+        : window.location.origin;
+    // Bake the admin-configured startup page into the link/QR code itself
+    // (?page=<slug>) instead of relying only on the Server's implicit
+    // default-page resolution at registration time. ConnectionProvider
+    // re-requests this exact page on every "connected" transition (see
+    // its onStateChange handler), so this also self-heals a device that
+    // reconnects mid-session after the startup page was changed.
+    return defaultPageSlug ? `${base}/?page=${encodeURIComponent(defaultPageSlug)}` : base;
+  }, [isLoopback, selectedAddress, defaultPageSlug]);
 
   async function copyLink() {
     try {

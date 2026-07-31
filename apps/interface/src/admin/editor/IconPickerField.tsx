@@ -72,7 +72,7 @@ export function IconPickerField({ value, onChange }: { value: unknown; onChange:
     setUploading(true);
     try {
       const { assetId } = await api.uploadIcon(file);
-      onChange({ source: "custom", assetId });
+      onChange({ source: "custom", assetId, ...(current?.size ? { size: current.size } : {}) });
     } catch (error) {
       setSearchError(error instanceof Error ? error.message : "Échec de l'import de l'image");
     } finally {
@@ -111,6 +111,39 @@ export function IconPickerField({ value, onChange }: { value: unknown; onChange:
         <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp,image/gif" style={{ display: "none" }} onChange={handleFileSelected} />
       </div>
 
+      {current && (
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--deck-muted-text)" }}>
+            Taille
+            <input
+              type="number"
+              min={8}
+              max={128}
+              value={current.size ?? 20}
+              onChange={(e) => onChange({ ...current, size: e.target.value === "" ? undefined : Number(e.target.value) })}
+              style={{ ...fieldStyle, width: 64 }}
+            />
+            px
+          </label>
+          {current.source === "iconify" && (
+            <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--deck-muted-text)" }}>
+              Couleur
+              <input
+                type="color"
+                value={current.color ?? "#ffffff"}
+                onChange={(e) => onChange({ ...current, color: e.target.value })}
+                style={{ width: 32, height: 28, padding: 0, border: "1px solid var(--widget-border)", borderRadius: 6, background: "none", cursor: "pointer" }}
+              />
+              {current.color && (
+                <button type="button" onClick={() => onChange({ ...current, color: undefined })} style={{ ...smallButtonStyle, padding: "2px 8px" }}>
+                  Défaut
+                </button>
+              )}
+            </label>
+          )}
+        </div>
+      )}
+
       <input
         type="search"
         placeholder="Rechercher une icône (Iconify, en ligne)..."
@@ -128,7 +161,14 @@ export function IconPickerField({ value, onChange }: { value: unknown; onChange:
               key={id}
               type="button"
               title={id}
-              onClick={() => onChange({ source: "iconify", id })}
+              onClick={() =>
+                onChange({
+                  source: "iconify",
+                  id,
+                  ...(current?.size ? { size: current.size } : {}),
+                  ...(current?.source === "iconify" && current.color ? { color: current.color } : {}),
+                })
+              }
               style={{
                 aspectRatio: "1 / 1",
                 display: "flex",

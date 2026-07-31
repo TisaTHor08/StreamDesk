@@ -14,27 +14,39 @@ import type { WidgetIcon } from "@streamdesk/shared-types";
 export function IconView({ icon, size = 20, alt = "" }: { icon: unknown; size?: number; alt?: string }) {
   const src = resolveIconSrc(icon);
   if (!src) return null;
+  // An icon-level `size` (set by the operator in the picker) overrides the
+  // caller's own default — the whole point of exposing it is to let each
+  // widget's icon be sized independently of the widget component's layout.
+  const effectiveSize = isWidgetIcon(icon) && typeof icon.size === "number" ? icon.size : size;
   return (
     <img
       src={src}
       alt={alt}
-      width={size}
-      height={size}
-      style={{ width: size, height: size, objectFit: "contain", flexShrink: 0 }}
+      width={effectiveSize}
+      height={effectiveSize}
+      style={{ width: effectiveSize, height: effectiveSize, objectFit: "contain", flexShrink: 0 }}
       draggable={false}
     />
   );
 }
 
+function isWidgetIcon(icon: unknown): icon is WidgetIcon {
+  return typeof icon === "object" && icon !== null && "source" in icon;
+}
+
 function resolveIconSrc(icon: unknown): string | null {
-  if (!icon || typeof icon !== "object") return null;
-  const value = icon as Partial<WidgetIcon>;
-  if (value.source === "iconify" && typeof value.id === "string" && value.id.includes(":")) {
-    const [prefix, name] = value.id.split(":", 2);
-    return `https://api.iconify.design/${prefix}/${name}.svg`;
+  if (!isWidgetIcon(icon)) return null;
+  if (icon.source === "iconify" && typeof icon.id === "string" && icon.id.includes(":")) {
+    const [prefix, name] = icon.id.split(":", 2);
+    // Iconify's own SVG rendering endpoint accepts a `color` param for
+    // most (monochrome) icons — recoloring server-side means every
+    // Interface benefits with no extra client-side SVG manipulation.
+    const color = "color" in icon && typeof icon.color === "string" && icon.color ? icon.color : null;
+    const query = color ? `?color=${encodeURIComponent(color)}` : "";
+    return `https://api.iconify.design/${prefix}/${name}.svg${query}`;
   }
-  if (value.source === "custom" && typeof value.assetId === "string") {
-    return `/api/icons/${value.assetId}`;
+  if (icon.source === "custom" && typeof icon.assetId === "string") {
+    return `/api/icons/${icon.assetId}`;
   }
   return null;
 }

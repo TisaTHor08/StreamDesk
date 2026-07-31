@@ -65,7 +65,7 @@ const TRIGGER_LABELS: Record<WidgetInteractionTrigger, string> = {
   press: "Appui",
   release: "Relâchement",
   longPress: "Appui long",
-  change: "Changement (curseur)",
+  change: "Changement (curseur / interrupteur)",
 };
 
 export type WidgetInspectorProps = {

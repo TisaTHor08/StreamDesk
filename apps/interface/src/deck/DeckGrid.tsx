@@ -111,6 +111,31 @@ function WidgetCell({ widget }: { widget: WidgetInstance }) {
 }
 
 export function DeckGrid({ page }: { page: DeckPage }) {
+  // A connected, resolved page with zero widgets renders as an entirely
+  // blank canvas — indistinguishable at a glance from "still loading" or
+  // "something crashed". Spelling it out avoids that silent dead end,
+  // especially on a phone/tablet where there's no console to check.
+  if (page.widgets.length === 0) {
+    return (
+      <div
+        style={{
+          height: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+          padding: "var(--spacing-lg)",
+          color: "var(--deck-muted-text)",
+          fontSize: 13,
+        }}
+      >
+        Cette page ("{page.name}") ne contient encore aucun widget.
+        <br />
+        Ajoutez-en depuis l'administration ({"/admin/pages"}).
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
