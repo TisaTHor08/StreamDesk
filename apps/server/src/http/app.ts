@@ -3,6 +3,7 @@ import Fastify, { type FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
 import websocketPlugin from "@fastify/websocket";
 import fastifyStatic from "@fastify/static";
+import multipart from "@fastify/multipart";
 import type { Runtime } from "../core/runtime.js";
 import { registerHealthRoutes } from "./routes/health.js";
 import { registerPageRoutes } from "./routes/pages.js";
@@ -10,6 +11,8 @@ import { registerPluginRoutes } from "./routes/plugins.js";
 import { registerDeviceRoutes } from "./routes/devices.js";
 import { registerPairingRoutes } from "./routes/pairing.js";
 import { registerSettingsRoutes } from "./routes/settings.js";
+import { registerVariableRoutes } from "./routes/variables.js";
+import { registerIconRoutes } from "./routes/icons.js";
 import { registerWebSocketRoutes } from "../ws/ws-server.js";
 
 export async function buildApp(runtime: Runtime, interfaceDistDir?: string): Promise<FastifyInstance> {
@@ -17,6 +20,10 @@ export async function buildApp(runtime: Runtime, interfaceDistDir?: string): Pro
 
   await app.register(cors, { origin: runtime.config.corsOrigin });
   await app.register(websocketPlugin);
+  // 2MB cap: icons are small UI assets, not general file storage — keeps
+  // the icons directory bounded and rules out using this endpoint to fill
+  // the disk.
+  await app.register(multipart, { limits: { fileSize: 2 * 1024 * 1024 } });
 
   await registerHealthRoutes(app, runtime);
   await registerPageRoutes(app, runtime);
@@ -24,6 +31,8 @@ export async function buildApp(runtime: Runtime, interfaceDistDir?: string): Pro
   await registerDeviceRoutes(app, runtime);
   await registerPairingRoutes(app, runtime);
   await registerSettingsRoutes(app, runtime);
+  await registerVariableRoutes(app, runtime);
+  await registerIconRoutes(app, runtime);
   await registerWebSocketRoutes(app, runtime);
 
   // Serve the built Interface PWA, when present, so the whole system can

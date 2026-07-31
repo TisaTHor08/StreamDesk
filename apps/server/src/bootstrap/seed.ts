@@ -24,13 +24,22 @@ export function seedDefaultPageIfEmpty(runtime: Runtime): void {
         widgetType: "core.button",
         pluginId: "core",
         position: { column: 0, row: 0, columnSpan: 1, rowSpan: 1 },
-        properties: { label: "Bonjour", icon: "wave" },
+        properties: { label: "Bonjour", icon: { source: "iconify", id: "mdi:hand-wave" } },
         interactions: [
           {
             trigger: "press",
-            actionId: "core.log.write",
-            input: { level: "info", message: "Bonjour depuis StreamDesk !" },
-            target: { mode: "automatic" },
+            blocks: [
+              {
+                id: randomUUID(),
+                kind: "action",
+                actionId: "core.log.write",
+                input: {
+                  level: { kind: "literal", value: "info" },
+                  message: { kind: "literal", value: "Bonjour depuis StreamDesk !" },
+                },
+                target: { mode: "automatic" },
+              },
+            ],
           },
         ],
       },
@@ -39,12 +48,11 @@ export function seedDefaultPageIfEmpty(runtime: Runtime): void {
         widgetType: "core.button",
         pluginId: "core",
         position: { column: 1, row: 0, columnSpan: 1, rowSpan: 1 },
-        properties: { label: "Compteur +1", icon: "plus" },
+        properties: { label: "Compteur +1", icon: { source: "iconify", id: "mdi:plus" } },
         interactions: [
           {
             trigger: "press",
-            actionId: "example.counter.increment",
-            input: {},
+            blocks: [{ id: randomUUID(), kind: "action", actionId: "example.counter.increment", input: {} }],
           },
         ],
       },

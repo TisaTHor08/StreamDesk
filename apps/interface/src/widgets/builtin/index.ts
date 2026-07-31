@@ -14,7 +14,7 @@ export function registerBuiltinWidgets(): void {
     displayName: "Bouton",
     propertiesSchema: {
       type: "object",
-      properties: { label: { type: "string" }, icon: { type: "string" } },
+      properties: { label: { type: "string" }, icon: { type: "object", format: "icon" } },
     },
     defaultSize: { columnSpan: 1, rowSpan: 1 },
     component: ButtonWidget,

@@ -1,4 +1,4 @@
-import type { ActionTarget } from "./actions.js";
+import type { InteractionBlock } from "./interaction-script.js";
 
 export type GridPosition = {
   column: number;
@@ -26,12 +26,17 @@ export type WidgetBinding = {
  */
 export type WidgetInteractionTrigger = "press" | "release" | "longPress" | "change";
 
-/** Wires a widget's user interaction to an action execution. */
+/**
+ * Wires a widget's trigger to a small visual script (see
+ * interaction-script.ts) — a sequence of blocks (actions, conditionals,
+ * loops, waits, variable reads/writes) run in order on the Server when the
+ * trigger fires. Each trigger a widget declares gets exactly one script;
+ * a single "action" block behaves exactly like V1's old one-action-per-
+ * trigger model.
+ */
 export type WidgetInteraction = {
   trigger: WidgetInteractionTrigger;
-  actionId: string;
-  input: Record<string, unknown>;
-  target?: ActionTarget;
+  blocks: InteractionBlock[];
 };
 
 export type WidgetStyle = {

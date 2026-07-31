@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { InteractionBlock, InteractionExpression } from "@streamdesk/shared-types";
 import { MESSAGE_TYPES, type MessageType } from "./message-types.js";
 import { PROTOCOL_VERSION } from "./envelope.js";
 
@@ -78,11 +79,93 @@ const widgetBindingSchema = z.object({
     .optional(),
 });
 
+/* ---------- interaction scripts (blocks + expressions) ----------
+ * Both types are recursive (a comparison's operands are themselves
+ * expressions; an "if" block's branches are themselves block sequences),
+ * so their zod schemas are built with z.lazy() and typed explicitly —
+ * zod can't infer a recursive schema's type on its own. */
+
+const compareOpSchema = z.enum(["eq", "neq", "gt", "gte", "lt", "lte"]);
+const logicalOpSchema = z.enum(["and", "or", "not"]);
+const arithmeticOpSchema = z.enum(["add", "sub", "mul", "div", "mod"]);
+
+export const interactionExpressionSchema: z.ZodType<InteractionExpression> = z.lazy(() =>
+  z.union([
+    z.object({ kind: z.literal("literal"), value: z.union([z.string(), z.number(), z.boolean()]) }),
+    z.object({ kind: z.literal("variable"), variableId: z.string().min(1) }),
+    z.object({ kind: z.literal("dataSource"), dataSourceId: z.string().min(1) }),
+    z.object({ kind: z.literal("triggerInput"), field: z.string().min(1) }),
+    z.object({
+      kind: z.literal("compare"),
+      op: compareOpSchema,
+      left: interactionExpressionSchema,
+      right: interactionExpressionSchema,
+    }),
+    z.object({
+      kind: z.literal("logical"),
+      op: logicalOpSchema,
+      operands: z.array(interactionExpressionSchema).min(1),
+    }),
+    z.object({
+      kind: z.literal("arithmetic"),
+      op: arithmeticOpSchema,
+      left: interactionExpressionSchema,
+      right: interactionExpressionSchema,
+    }),
+  ]),
+);
+
+export const interactionBlockSchema: z.ZodType<InteractionBlock> = z.lazy(() =>
+  z.union([
+    z.object({
+      id: z.string().min(1),
+      kind: z.literal("action"),
+      actionId: z.string().min(1),
+      input: z.record(interactionExpressionSchema),
+      target: actionTargetSchema.optional(),
+    }),
+    z.object({
+      id: z.string().min(1),
+      kind: z.literal("if"),
+      condition: interactionExpressionSchema,
+      then: z.array(interactionBlockSchema),
+      else: z.array(interactionBlockSchema).optional(),
+    }),
+    z.object({
+      id: z.string().min(1),
+      kind: z.literal("repeatCount"),
+      count: interactionExpressionSchema,
+      body: z.array(interactionBlockSchema),
+    }),
+    z.object({
+      id: z.string().min(1),
+      kind: z.literal("repeatWhile"),
+      condition: interactionExpressionSchema,
+      body: z.array(interactionBlockSchema),
+    }),
+    z.object({
+      id: z.string().min(1),
+      kind: z.literal("wait"),
+      durationMs: interactionExpressionSchema,
+    }),
+    z.object({
+      id: z.string().min(1),
+      kind: z.literal("setVariable"),
+      variableId: z.string().min(1),
+      value: interactionExpressionSchema,
+    }),
+    z.object({
+      id: z.string().min(1),
+      kind: z.literal("changeVariable"),
+      variableId: z.string().min(1),
+      delta: interactionExpressionSchema,
+    }),
+  ]),
+);
+
 const widgetInteractionSchema = z.object({
   trigger: z.enum(["press", "release", "longPress", "change"]),
-  actionId: z.string(),
-  input: z.record(z.unknown()),
-  target: actionTargetSchema.optional(),
+  blocks: z.array(interactionBlockSchema),
 });
 
 const widgetInstanceSchema = z.object({

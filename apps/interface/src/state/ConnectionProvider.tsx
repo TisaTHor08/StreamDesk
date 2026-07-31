@@ -35,7 +35,20 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     connection.setListener({
-      onStateChange: setState,
+      onStateChange: (nextState) => {
+        setState(nextState);
+        // On every (re)connect, the Server already sends the admin-configured
+        // default page automatically (see server's registerInterface ->
+        // sendPageSnapshot). A "?page=<slug>" in the URL — e.g. the admin's
+        // "Aperçu" link, or a bookmark/QR code aimed at a specific page —
+        // overrides that default. Re-checked on every reconnect (not just
+        // once) so a network blip doesn't bounce the operator back to the
+        // default page.
+        if (nextState === "connected") {
+          const slug = new URLSearchParams(window.location.search).get("page");
+          if (slug) connection.requestPage({ slug });
+        }
+      },
       onPage: (nextPage) => {
         setPage(nextPage);
         setBoundValues({});

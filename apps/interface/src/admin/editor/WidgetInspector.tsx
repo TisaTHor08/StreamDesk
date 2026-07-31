@@ -1,14 +1,18 @@
+import { useState } from "react";
 import type {
   ActionDefinition,
   DataSourceDefinition,
   DeckPage,
+  InteractionBlock,
+  InteractionVariable,
   JsonSchema,
   WidgetBinding,
   WidgetInstance,
-  WidgetInteraction,
   WidgetInteractionTrigger,
 } from "@streamdesk/shared-types";
 import { widgetRegistry } from "../../widgets/registry.js";
+import { InteractionScriptEditor, type BlockEditorContext } from "./InteractionScriptEditor.js";
+import { IconPickerField } from "./IconPickerField.js";
 
 const fieldStyle: React.CSSProperties = {
   background: "var(--widget-background)",
@@ -56,11 +60,21 @@ const rowBoxStyle: React.CSSProperties = {
   marginBottom: 8,
 };
 
+const DISCRETE_TRIGGERS: WidgetInteractionTrigger[] = ["press", "release", "longPress"];
+const TRIGGER_LABELS: Record<WidgetInteractionTrigger, string> = {
+  press: "Appui",
+  release: "Relâchement",
+  longPress: "Appui long",
+  change: "Changement (curseur)",
+};
+
 export type WidgetInspectorProps = {
   widget: WidgetInstance;
   pages: DeckPage[];
   actions: ActionDefinition[];
   dataSources: DataSourceDefinition[];
+  variables: InteractionVariable[];
+  pluginNames: Record<string, string>;
   onChange: (patch: Partial<WidgetInstance>) => void;
   onDelete: () => void;
   onDuplicate: () => void;
@@ -70,34 +84,43 @@ export type WidgetInspectorProps = {
  * Right-hand properties panel for whichever widget is currently selected on
  * the canvas. Properties are generated from the widget definition's
  * `propertiesSchema` (JSON Schema subset) so plugin-contributed widgets get
- * a usable form for free, with one special case: `core.navigation`'s
- * `targetSlug` is rendered as a page picker rather than a raw text field,
- * since typing a slug by hand is exactly the kind of friction this editor
- * is meant to remove.
+ * a usable form for free, with two special cases: `core.navigation`'s
+ * `targetSlug` is rendered as a page picker, and any property with
+ * `format: "icon"` gets the Iconify/upload icon picker — typing either by
+ * hand is exactly the kind of friction this editor is meant to remove.
+ *
+ * Position (column/row/width/height) is deliberately NOT editable here —
+ * it's set by dragging/resizing the widget directly on the grid, and
+ * showing redundant number fields for it here just invites the two to
+ * drift out of sync.
  */
-export function WidgetInspector({ widget, pages, actions, dataSources, onChange, onDelete, onDuplicate }: WidgetInspectorProps) {
+export function WidgetInspector({
+  widget,
+  pages,
+  actions,
+  dataSources,
+  variables,
+  pluginNames,
+  onChange,
+  onDelete,
+  onDuplicate,
+}: WidgetInspectorProps) {
   const definition = widgetRegistry.get(widget.widgetType);
-  const schemaProps = definition?.propertiesSchema.properties ?? {};
+  const schemaProps: Record<string, JsonSchema> = definition?.propertiesSchema.properties ?? {};
+  const [editingTrigger, setEditingTrigger] = useState<WidgetInteractionTrigger | null>(null);
 
   function setProperty(key: string, value: unknown) {
     onChange({ properties: { ...widget.properties, [key]: value } });
   }
 
-  function addInteraction() {
-    const next: WidgetInteraction = { trigger: "press", actionId: actions[0]?.id ?? "", input: {} };
-    onChange({ interactions: [...(widget.interactions ?? []), next] });
+  function blocksFor(trigger: WidgetInteractionTrigger): InteractionBlock[] {
+    return widget.interactions?.find((i) => i.trigger === trigger)?.blocks ?? [];
   }
 
-  function updateInteraction(index: number, patch: Partial<WidgetInteraction>) {
-    const list = [...(widget.interactions ?? [])];
-    const current = list[index];
-    if (!current) return;
-    list[index] = { ...current, ...patch };
-    onChange({ interactions: list });
-  }
-
-  function removeInteraction(index: number) {
-    onChange({ interactions: (widget.interactions ?? []).filter((_, i) => i !== index) });
+  function saveBlocks(trigger: WidgetInteractionTrigger, blocks: InteractionBlock[]) {
+    const others = (widget.interactions ?? []).filter((i) => i.trigger !== trigger);
+    const next = blocks.length > 0 ? [...others, { trigger, blocks }] : others;
+    onChange({ interactions: next });
   }
 
   function addBinding() {
@@ -116,6 +139,11 @@ export function WidgetInspector({ widget, pages, actions, dataSources, onChange,
   function removeBinding(index: number) {
     onChange({ bindings: (widget.bindings ?? []).filter((_, i) => i !== index) });
   }
+
+  const availableTriggers: WidgetInteractionTrigger[] =
+    definition?.interactionMode === "continuous" ? ["change"] : DISCRETE_TRIGGERS;
+
+  const editorCtx: BlockEditorContext = { actions, dataSources, variables, pluginNames };
 
   return (
     <div>
@@ -154,53 +182,6 @@ export function WidgetInspector({ widget, pages, actions, dataSources, onChange,
         </select>
       </label>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
-        <label style={{ fontSize: 11, color: "var(--deck-muted-text)" }}>
-          Colonne
-          <input
-            type="number"
-            min={0}
-            style={fieldStyle}
-            value={widget.position.column}
-            onChange={(e) => onChange({ position: { ...widget.position, column: Math.max(0, Math.round(Number(e.target.value))) } })}
-          />
-        </label>
-        <label style={{ fontSize: 11, color: "var(--deck-muted-text)" }}>
-          Ligne
-          <input
-            type="number"
-            min={0}
-            style={fieldStyle}
-            value={widget.position.row}
-            onChange={(e) => onChange({ position: { ...widget.position, row: Math.max(0, Math.round(Number(e.target.value))) } })}
-          />
-        </label>
-        <label style={{ fontSize: 11, color: "var(--deck-muted-text)" }}>
-          Largeur (colonnes)
-          <input
-            type="number"
-            min={1}
-            style={fieldStyle}
-            value={widget.position.columnSpan}
-            onChange={(e) =>
-              onChange({ position: { ...widget.position, columnSpan: Math.max(1, Math.round(Number(e.target.value))) } })
-            }
-          />
-        </label>
-        <label style={{ fontSize: 11, color: "var(--deck-muted-text)" }}>
-          Hauteur (lignes)
-          <input
-            type="number"
-            min={1}
-            style={fieldStyle}
-            value={widget.position.rowSpan}
-            onChange={(e) =>
-              onChange({ position: { ...widget.position, rowSpan: Math.max(1, Math.round(Number(e.target.value))) } })
-            }
-          />
-        </label>
-      </div>
-
       <h3 style={{ fontSize: 12, color: "var(--deck-muted-text)", margin: "16px 0 8px" }}>Propriétés</h3>
       {Object.entries(schemaProps).map(([key, propSchema]) => (
         <PropertyField
@@ -217,58 +198,40 @@ export function WidgetInspector({ widget, pages, actions, dataSources, onChange,
         <p style={{ fontSize: 12, color: "var(--deck-muted-text)" }}>Ce widget n'a pas de propriétés.</p>
       )}
 
-      <h3 style={{ fontSize: 12, color: "var(--deck-muted-text)", margin: "16px 0 8px" }}>
-        Interactions ({widget.interactions?.length ?? 0})
-      </h3>
-      {(widget.interactions ?? []).map((interaction, index) => (
-        <div key={index} style={rowBoxStyle}>
-          <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-            <select
-              style={fieldStyle}
-              value={interaction.trigger}
-              onChange={(e) => updateInteraction(index, { trigger: e.target.value as WidgetInteractionTrigger })}
-            >
-              <option value="press">press</option>
-              <option value="release">release</option>
-              <option value="longPress">longPress</option>
-              <option value="change">change (sliders)</option>
-            </select>
-            <button onClick={() => removeInteraction(index)} style={iconButtonStyle} title="Retirer">
-              ✕
-            </button>
+      <h3 style={{ fontSize: 12, color: "var(--deck-muted-text)", margin: "16px 0 8px" }}>Interactions</h3>
+      {availableTriggers.map((trigger) => {
+        const count = blocksFor(trigger).length;
+        return (
+          <div key={trigger} style={{ ...rowBoxStyle, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 600 }}>{TRIGGER_LABELS[trigger]}</div>
+              <div style={{ fontSize: 11, color: "var(--deck-muted-text)" }}>
+                {count === 0 ? "Aucun bloc" : `${count} bloc${count > 1 ? "s" : ""}`}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 6 }}>
+              {count > 0 && (
+                <button onClick={() => saveBlocks(trigger, [])} style={{ ...iconButtonStyle, width: "auto", padding: "0 8px" }} title="Vider">
+                  Vider
+                </button>
+              )}
+              <button onClick={() => setEditingTrigger(trigger)} style={{ ...iconButtonStyle, width: "auto", padding: "0 8px" }}>
+                Éditer
+              </button>
+            </div>
           </div>
-          <select
-            style={{ ...fieldStyle, marginBottom: 6 }}
-            value={interaction.actionId}
-            onChange={(e) => updateInteraction(index, { actionId: e.target.value })}
-          >
-            <option value="">— choisir une action —</option>
-            {actions.map((a) => (
-              <option key={a.id} value={a.id}>
-                {a.displayName} ({a.id})
-              </option>
-            ))}
-          </select>
-          <label style={{ fontSize: 11, color: "var(--deck-muted-text)" }}>
-            Paramètres (JSON)
-            <textarea
-              style={{ ...fieldStyle, minHeight: 44, fontFamily: "monospace" }}
-              defaultValue={JSON.stringify(interaction.input ?? {}, null, 2)}
-              onBlur={(e) => {
-                try {
-                  const value = e.target.value.trim() === "" ? {} : JSON.parse(e.target.value);
-                  updateInteraction(index, { input: value });
-                } catch {
-                  // Invalid JSON: leave the previously saved value in place.
-                }
-              }}
-            />
-          </label>
-        </div>
-      ))}
-      <button onClick={addInteraction} style={smallButtonStyle}>
-        + Interaction
-      </button>
+        );
+      })}
+
+      {editingTrigger && (
+        <InteractionScriptEditor
+          trigger={editingTrigger}
+          blocks={blocksFor(editingTrigger)}
+          ctx={editorCtx}
+          onSave={(blocks) => saveBlocks(editingTrigger, blocks)}
+          onClose={() => setEditingTrigger(null)}
+        />
+      )}
 
       <h3 style={{ fontSize: 12, color: "var(--deck-muted-text)", margin: "16px 0 8px" }}>
         Données liées ({widget.bindings?.length ?? 0})
@@ -340,6 +303,10 @@ function PropertyField({
         </select>
       </label>
     );
+  }
+
+  if (schema.format === "icon") {
+    return <IconPickerField value={value} onChange={(icon) => onChange(icon)} />;
   }
 
   if (schema.type === "boolean") {

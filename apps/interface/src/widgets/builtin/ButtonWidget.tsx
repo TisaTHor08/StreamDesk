@@ -1,4 +1,5 @@
 import type { WidgetRenderProps } from "@streamdesk/interface-sdk";
+import { IconView } from "@streamdesk/ui-kit";
 
 export function ButtonWidget({ properties, active, disabled }: WidgetRenderProps) {
   const label = typeof properties.label === "string" ? properties.label : "";
@@ -17,8 +18,10 @@ export function ButtonWidget({ properties, active, disabled }: WidgetRenderProps
         width: "100%",
         height: "100%",
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
+        gap: 4,
         padding: "var(--spacing-sm)",
         fontSize: 15,
         fontWeight: 600,
@@ -28,7 +31,8 @@ export function ButtonWidget({ properties, active, disabled }: WidgetRenderProps
         touchAction: "manipulation",
       }}
     >
-      {label}
+      <IconView icon={properties.icon} size={24} />
+      {label && <span>{label}</span>}
     </button>
   );
 }

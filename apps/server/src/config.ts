@@ -6,6 +6,8 @@ export type ServerConfig = {
   port: number;
   dataDir: string;
   dbPath: string;
+  /** Uploaded custom icon images (see routes/icons.ts), served back at /api/icons/:assetId. */
+  iconsDir: string;
   pluginsDir: string;
   logLevel: "debug" | "info" | "warn" | "error";
   /** Milliseconds to wait for a Connect to return an action result before timing out. */
@@ -27,6 +29,9 @@ export function loadConfig(): ServerConfig {
   const dataDir = resolve(process.env.DATA_DIR ?? "./data");
   mkdirSync(dataDir, { recursive: true });
 
+  const iconsDir = resolve(dataDir, "icons");
+  mkdirSync(iconsDir, { recursive: true });
+
   const pluginsDir = resolve(process.env.PLUGINS_DIR ?? "../../plugins");
 
   return {
@@ -34,6 +39,7 @@ export function loadConfig(): ServerConfig {
     port: envInt("PORT", 8080),
     dataDir,
     dbPath: process.env.DB_PATH ?? resolve(dataDir, "streamdesk.sqlite"),
+    iconsDir,
     pluginsDir,
     logLevel: (process.env.LOG_LEVEL as ServerConfig["logLevel"]) ?? "info",
     actionTimeoutMs: envInt("ACTION_TIMEOUT_MS", 10_000),

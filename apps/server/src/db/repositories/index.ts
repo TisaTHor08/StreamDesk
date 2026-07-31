@@ -9,6 +9,7 @@ import { EventsRepository } from "./events.repo.js";
 import { DataSourcesRepository } from "./datasources.repo.js";
 import { PairingRepository } from "./pairing.repo.js";
 import { SettingsRepository } from "./settings.repo.js";
+import { VariablesRepository } from "./variables.repo.js";
 
 export type Repositories = {
   pages: PagesRepository;
@@ -22,6 +23,7 @@ export type Repositories = {
   dataSources: DataSourcesRepository;
   pairing: PairingRepository;
   settings: SettingsRepository;
+  variables: VariablesRepository;
 };
 
 export function createRepositories(db: Database.Database): Repositories {
@@ -37,6 +39,7 @@ export function createRepositories(db: Database.Database): Repositories {
     dataSources: new DataSourcesRepository(db),
     pairing: new PairingRepository(db),
     settings: new SettingsRepository(db),
+    variables: new VariablesRepository(db),
   };
 }
 
@@ -50,3 +53,4 @@ export * from "./events.repo.js";
 export * from "./datasources.repo.js";
 export * from "./pairing.repo.js";
 export * from "./settings.repo.js";
+export * from "./variables.repo.js";

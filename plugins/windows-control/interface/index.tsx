@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { InterfacePluginContext, WidgetRenderProps } from "@streamdesk/interface-sdk";
+import { IconView } from "@streamdesk/ui-kit";
 
 /**
  * Interface-side component of `windows-control`: custom widgets (sliders,
@@ -35,7 +36,6 @@ const cardStyle: React.CSSProperties = {
 
 function SliderWidget({ properties, boundValues, onInteract }: WidgetRenderProps) {
   const label = typeof properties.label === "string" ? properties.label : "";
-  const icon = typeof properties.icon === "string" ? properties.icon : "";
   const remoteValue = typeof boundValues.value === "number" ? boundValues.value : 0;
 
   const [dragging, setDragging] = useState(false);
@@ -75,9 +75,10 @@ function SliderWidget({ properties, boundValues, onInteract }: WidgetRenderProps
 
   return (
     <div style={cardStyle}>
-      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12 }}>
-        <span>
-          {icon} {label}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12 }}>
+        <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <IconView icon={properties.icon} size={16} />
+          {label}
         </span>
         <span style={{ color: "var(--deck-muted-text)" }}>{Math.round(localValue)}%</span>
       </div>
@@ -192,7 +193,7 @@ export function activate(context: InterfacePluginContext): void {
     pluginId: "windows-control",
     displayName: "Volume (curseur)",
     category: CATEGORY,
-    propertiesSchema: { type: "object", properties: { label: { type: "string" }, icon: { type: "string" } } },
+    propertiesSchema: { type: "object", properties: { label: { type: "string" }, icon: { type: "object", format: "icon" } } },
     defaultSize: { columnSpan: 2, rowSpan: 1 },
     interactionMode: "continuous",
     component: (props) => <SliderWidget {...props} />,
@@ -203,7 +204,7 @@ export function activate(context: InterfacePluginContext): void {
     pluginId: "windows-control",
     displayName: "Volume micro (curseur)",
     category: CATEGORY,
-    propertiesSchema: { type: "object", properties: { label: { type: "string" }, icon: { type: "string" } } },
+    propertiesSchema: { type: "object", properties: { label: { type: "string" }, icon: { type: "object", format: "icon" } } },
     defaultSize: { columnSpan: 2, rowSpan: 1 },
     interactionMode: "continuous",
     component: (props) => <SliderWidget {...props} />,
@@ -214,7 +215,7 @@ export function activate(context: InterfacePluginContext): void {
     pluginId: "windows-control",
     displayName: "Luminosité (curseur)",
     category: CATEGORY,
-    propertiesSchema: { type: "object", properties: { label: { type: "string" }, icon: { type: "string" } } },
+    propertiesSchema: { type: "object", properties: { label: { type: "string" }, icon: { type: "object", format: "icon" } } },
     defaultSize: { columnSpan: 2, rowSpan: 1 },
     interactionMode: "continuous",
     component: (props) => <SliderWidget {...props} />,
@@ -300,19 +301,43 @@ export function activate(context: InterfacePluginContext): void {
       },
       {
         widgetType: "windows.volumeSlider",
-        properties: { label: "Volume", icon: "🔊" },
+        properties: { label: "Volume", icon: { source: "iconify", id: "mdi:volume-high" } },
         defaultSize: { columnSpan: 2, rowSpan: 1 },
         offset: { column: 0, row: 1 },
         bindings: [{ property: "value", dataSourceId: "windows.audio.volume" }],
-        interactions: [{ trigger: "change", actionId: "windows.volume.set", input: { level: 50 } }],
+        interactions: [
+          {
+            trigger: "change",
+            blocks: [
+              {
+                id: "windows-preset-volume-set",
+                kind: "action",
+                actionId: "windows.volume.set",
+                input: { level: { kind: "triggerInput", field: "level" } },
+              },
+            ],
+          },
+        ],
       },
       {
         widgetType: "windows.brightnessSlider",
-        properties: { label: "Luminosité", icon: "🔆" },
+        properties: { label: "Luminosité", icon: { source: "iconify", id: "mdi:brightness-6" } },
         defaultSize: { columnSpan: 2, rowSpan: 1 },
         offset: { column: 0, row: 2 },
         bindings: [{ property: "value", dataSourceId: "windows.brightness" }],
-        interactions: [{ trigger: "change", actionId: "windows.brightness.set", input: { level: 50 } }],
+        interactions: [
+          {
+            trigger: "change",
+            blocks: [
+              {
+                id: "windows-preset-brightness-set",
+                kind: "action",
+                actionId: "windows.brightness.set",
+                input: { level: { kind: "triggerInput", field: "level" } },
+              },
+            ],
+          },
+        ],
       },
       {
         widgetType: "windows.wifiStatus",
@@ -324,7 +349,12 @@ export function activate(context: InterfacePluginContext): void {
           { property: "connected", dataSourceId: "windows.wifi.connected" },
           { property: "ssid", dataSourceId: "windows.wifi.ssid" },
         ],
-        interactions: [{ trigger: "press", actionId: "windows.wifi.toggle", input: {} }],
+        interactions: [
+          {
+            trigger: "press",
+            blocks: [{ id: "windows-preset-wifi-toggle", kind: "action", actionId: "windows.wifi.toggle", input: {} }],
+          },
+        ],
       },
       {
         widgetType: "windows.cpuGauge",

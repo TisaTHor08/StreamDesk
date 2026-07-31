@@ -10,7 +10,7 @@ import {
   type InterfaceWidgetInteractPayload,
 } from "@streamdesk/protocol";
 import type { Runtime } from "../core/runtime.js";
-import { generateId, generateToken, hashToken } from "../security/tokens.js";
+import { generateToken, hashToken } from "../security/tokens.js";
 import { makeSender, sendError } from "./envelope-io.js";
 import { CURRENT_PAGE_SCHEMA_VERSION, type DeckPage } from "@streamdesk/shared-types";
 
@@ -195,21 +195,17 @@ async function handleWidgetInteract(
     return;
   }
 
-  // A slider/gauge-style widget reports its live value via `inputOverride`
-  // rather than a fixed, persisted input — the widget still only ever picks
-  // *a value*, never the actionId or target, so routing stays entirely
-  // server-owned (see InterfaceWidgetInteractPayload's doc comment).
-  const input = payload.inputOverride ? { ...interaction.input, ...payload.inputOverride } : interaction.input;
-
-  const result = await runtime.router.execute({
-    executionId: generateId("exec"),
-    actionId: interaction.actionId,
-    input,
-    target: interaction.target,
+  // The trigger's own live payload (e.g. a slider's new position) is only
+  // ever a *value* the script's blocks may read via a `triggerInput`
+  // expression — the Interface still never decides which action runs or
+  // how (see InterfaceWidgetInteractPayload's doc comment); that stays
+  // entirely inside the script the operator built in the block editor.
+  const { ok, errors } = await runtime.interactionEngine.run(interaction.blocks, {
+    triggerInput: payload.inputOverride ?? {},
     requestedBy: { type: "widget", id: widget.id },
   });
 
-  if (result.status !== "success") {
+  if (!ok) {
     const send = makeSender(socket);
     send(
       createEnvelope({
@@ -217,7 +213,7 @@ async function handleWidgetInteract(
         source: { role: "server", instanceId: SERVER_INSTANCE_ID },
         payload: {
           level: "error",
-          message: result.error?.message ?? `Action failed with status "${result.status}"`,
+          message: errors[0] ?? "L'interaction a échoué",
         },
       }),
     );
@@ -226,7 +222,8 @@ async function handleWidgetInteract(
   logger.debug("Widget interaction handled", {
     pageId: payload.pageId,
     widgetId: payload.widgetId,
-    actionId: interaction.actionId,
-    status: result.status,
+    trigger: payload.trigger,
+    ok,
+    errors,
   });
 }

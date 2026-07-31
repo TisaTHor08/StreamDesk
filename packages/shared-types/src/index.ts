@@ -3,6 +3,8 @@ export * from "./identity.js";
 export * from "./actions.js";
 export * from "./events.js";
 export * from "./datasources.js";
+export * from "./interaction-script.js";
+export * from "./icon.js";
 export * from "./pages.js";
 export * from "./logging.js";
 export * from "./permissions.js";

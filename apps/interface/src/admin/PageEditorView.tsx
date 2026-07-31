@@ -1,6 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import type { ActionDefinition, DataSourceDefinition, DeckPage, GridPosition, WidgetInstance } from "@streamdesk/shared-types";
+import type {
+  ActionDefinition,
+  DataSourceDefinition,
+  DeckPage,
+  GridPosition,
+  InteractionVariable,
+  WidgetInstance,
+} from "@streamdesk/shared-types";
 import type { InstalledPlugin } from "@streamdesk/plugin-manifest";
 import { widgetRegistry, presetRegistry } from "../widgets/registry.js";
 import { GridEditor } from "./editor/GridEditor.js";
@@ -53,6 +60,7 @@ export function PageEditorView() {
   const [allPages, setAllPages] = useState<DeckPage[]>([]);
   const [actions, setActions] = useState<ActionDefinition[]>([]);
   const [dataSources, setDataSources] = useState<DataSourceDefinition[]>([]);
+  const [variables, setVariables] = useState<InteractionVariable[]>([]);
   const [plugins, setPlugins] = useState<InstalledPlugin[]>([]);
   const [selectedWidgetId, setSelectedWidgetId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -68,6 +76,7 @@ export function PageEditorView() {
     api.listPages().then(setAllPages);
     api.listActions().then(setActions);
     api.listDataSources().then(setDataSources);
+    api.listVariables().then(setVariables);
     api.listPlugins().then(setPlugins);
   }, [id]);
 
@@ -190,7 +199,7 @@ export function PageEditorView() {
   }
 
   async function remove() {
-    if (!id || page.slug === "home") return;
+    if (!page || !id || page.slug === "home") return;
     if (!window.confirm("Supprimer cette page ?")) return;
     await api.deletePage(id);
     navigate("/admin/pages");
@@ -325,6 +334,8 @@ export function PageEditorView() {
               pages={allPages}
               actions={actions}
               dataSources={dataSources}
+              variables={variables}
+              pluginNames={pluginNames}
               onChange={(patch) => updateWidget(selectedWidget.id, patch)}
               onDelete={() => removeWidget(selectedWidget.id)}
               onDuplicate={() => duplicateWidget(selectedWidget.id)}

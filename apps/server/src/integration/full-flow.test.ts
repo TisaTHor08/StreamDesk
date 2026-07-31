@@ -137,7 +137,7 @@ describe("full flow: interface press -> server -> action -> data source -> inter
     expect(page.slug).toBe("home");
 
     const counterButton = page.widgets.find((w) =>
-      w.interactions?.some((i) => i.actionId === "example.counter.increment"),
+      w.interactions?.some((i) => i.blocks.some((b) => b.kind === "action" && b.actionId === "example.counter.increment")),
     );
     expect(counterButton).toBeDefined();
 

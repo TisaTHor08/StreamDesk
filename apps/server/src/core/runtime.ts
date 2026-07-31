@@ -10,6 +10,7 @@ import { ConnectionRegistry } from "../realtime/connection-registry.js";
 import { ActionRouter } from "./action-router.js";
 import { EventBus } from "./event-bus.js";
 import { DataSourceStore } from "./datasource-store.js";
+import { InteractionEngine } from "./interaction-engine.js";
 
 /**
  * Central composition root wiring the database, registries, and live
@@ -27,6 +28,7 @@ export class Runtime {
   readonly router: ActionRouter;
   readonly eventBus: EventBus;
   readonly dataSources: DataSourceStore;
+  readonly interactionEngine: InteractionEngine;
 
   constructor(
     readonly db: Database.Database,
@@ -54,6 +56,13 @@ export class Runtime {
       this.connections,
       this.repos.pages,
       logger.child("server", "datasource-store"),
+    );
+
+    this.interactionEngine = new InteractionEngine(
+      this.router,
+      this.repos.variables,
+      this.dataSources,
+      logger.child("server", "interaction-engine"),
     );
   }
 }

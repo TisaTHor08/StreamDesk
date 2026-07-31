@@ -5,6 +5,7 @@ import { openDatabase } from "./db/client.js";
 import { Runtime } from "./core/runtime.js";
 import { loadPlugins } from "./plugins/loader.js";
 import { seedDefaultPageIfEmpty } from "./bootstrap/seed.js";
+import { registerAllVariableDataSources } from "./bootstrap/register-variable-data-sources.js";
 import { buildApp } from "./http/app.js";
 
 async function main(): Promise<void> {
@@ -22,6 +23,7 @@ async function main(): Promise<void> {
 
   await loadPlugins(runtime);
   seedDefaultPageIfEmpty(runtime);
+  registerAllVariableDataSources(runtime);
 
   const interfaceDistDir = process.env.INTERFACE_DIST_DIR ?? resolve("../interface/dist");
   const app = await buildApp(runtime, interfaceDistDir);

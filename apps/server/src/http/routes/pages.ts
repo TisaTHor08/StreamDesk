@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { CURRENT_PAGE_SCHEMA_VERSION, type DeckPage } from "@streamdesk/shared-types";
+import { interactionBlockSchema } from "@streamdesk/protocol";
 import type { Runtime } from "../../core/runtime.js";
 
 const widgetInputSchema = z.object({
@@ -22,9 +23,7 @@ const widgetInputSchema = z.object({
     .array(
       z.object({
         trigger: z.enum(["press", "release", "longPress", "change"]),
-        actionId: z.string(),
-        input: z.record(z.unknown()).default({}),
-        target: z.object({ mode: z.enum(["automatic", "specific"]), connectId: z.string().optional() }).optional(),
+        blocks: z.array(interactionBlockSchema).default([]),
       }),
     )
     .optional(),

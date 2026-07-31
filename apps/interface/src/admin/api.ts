@@ -4,6 +4,7 @@ import type {
   DataSourceDefinition,
   DeckPage,
   EventDefinition,
+  InteractionVariable,
   InterfaceRecord,
 } from "@streamdesk/shared-types";
 import type { InstalledPlugin } from "@streamdesk/plugin-manifest";
@@ -18,6 +19,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error(body.error ?? `Request failed with status ${response.status}`);
   }
   if (response.status === 204) return undefined as T;
+  return (await response.json()) as T;
+}
+
+/** Separate from `request()`: a multipart upload must NOT force a JSON
+ * content-type header — the browser needs to set its own `boundary`. */
+async function uploadFile<T>(path: string, file: File): Promise<T> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await fetch(`/api${path}`, { method: "POST", body: formData });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.error ?? `Upload failed with status ${response.status}`);
+  }
   return (await response.json()) as T;
 }
 
@@ -48,4 +62,14 @@ export const api = {
   getSettings: () => request<{ defaultPageSlug: string }>("/settings"),
   updateSettings: (body: { defaultPageSlug: string }) =>
     request<{ defaultPageSlug: string }>("/settings", { method: "PUT", body: JSON.stringify(body) }),
+
+  listVariables: () => request<InteractionVariable[]>("/variables"),
+  createVariable: (body: { name: string; initialValue: string | number | boolean }) =>
+    request<InteractionVariable>("/variables", { method: "POST", body: JSON.stringify(body) }),
+  updateVariable: (id: string, body: { name?: string; initialValue?: string | number | boolean }) =>
+    request<InteractionVariable>(`/variables/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  resetVariable: (id: string) => request<InteractionVariable>(`/variables/${id}/reset`, { method: "POST" }),
+  deleteVariable: (id: string) => request<void>(`/variables/${id}`, { method: "DELETE" }),
+
+  uploadIcon: (file: File) => uploadFile<{ assetId: string }>("/icons", file),
 };
