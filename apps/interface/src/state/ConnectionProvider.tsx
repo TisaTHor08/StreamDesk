@@ -68,7 +68,21 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
 
     const onResize = () => connection.updateViewport();
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      // React 18 StrictMode runs this effect's setup, then this cleanup,
+      // then the setup again, once, in dev — specifically to catch a
+      // missing "undo what setup just did" cleanup like this one used to
+      // be. Without it, the mount->cleanup->remount cycle left the first
+      // WebSocket open but orphaned (this.socket had already moved on to a
+      // second one), which then closed on its own and triggered an
+      // automatic reconnect — a loop visible in the Server's own logs as
+      // the same Interface registering over and over. connect()'s own
+      // idempotency guard (see connection.ts) means calling close() here
+      // and connect() again on remount just cleanly replaces the socket
+      // instead of leaking one.
+      connection.close();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

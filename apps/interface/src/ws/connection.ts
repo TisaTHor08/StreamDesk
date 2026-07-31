@@ -38,6 +38,7 @@ export class ServerConnection {
   private readonly identity: StoredIdentity;
   private listener: ConnectionListener = {};
   private state: ConnectionState = "connecting";
+  private closedByUser = false;
 
   constructor() {
     this.identity = loadOrCreateIdentity();
@@ -52,12 +53,38 @@ export class ServerConnection {
   }
 
   connect(): void {
+    // Idempotency guard: React 18 StrictMode deliberately runs an effect's
+    // setup twice in dev (mount -> cleanup -> mount again) to surface
+    // missing cleanup — and ConnectionProvider's effect calls connect() on
+    // every run. Without this guard, the second call opened a *second*
+    // WebSocket on this same instance, silently orphaning the first (still
+    // open, still registered, but no longer referenced by `this.socket` so
+    // `send()` stopped using it) — which then closed on its own and
+    // triggered handleClose()'s reconnect, which raced with the second
+    // socket's own lifecycle. The visible symptom was a rapid, endless
+    // "register -> disconnect -> reconnect" loop (see the Server's own log)
+    // that never gave the Interface a stable connection to actually render
+    // a page against.
+    if (this.socket && (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING)) {
+      return;
+    }
+    this.closedByUser = false;
     this.setState("connecting");
     this.socket = new WebSocket(wsUrl());
     this.socket.addEventListener("open", () => this.handleOpen());
     this.socket.addEventListener("message", (event) => this.handleMessage(event.data as string));
     this.socket.addEventListener("close", () => this.handleClose());
     this.socket.addEventListener("error", () => this.socket?.close());
+  }
+
+  /** Closes the current socket without triggering the automatic reconnect
+   * — for a genuine teardown (e.g. a future route that unmounts
+   * ConnectionProvider), as opposed to handleClose()'s "the connection
+   * dropped unexpectedly, retry" path. */
+  close(): void {
+    this.closedByUser = true;
+    this.stopHeartbeat();
+    this.socket?.close();
   }
 
   requestPage(request: { pageId?: string; slug?: string }): void {
@@ -174,6 +201,7 @@ export class ServerConnection {
   private handleClose(): void {
     this.setState("disconnected");
     this.stopHeartbeat();
+    if (this.closedByUser) return;
     window.setTimeout(() => this.connect(), this.reconnectDelay);
     this.reconnectDelay = Math.min(this.reconnectDelay * 2, RECONNECT_MAX_MS);
   }
