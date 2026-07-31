@@ -95,10 +95,24 @@ if errorlevel 1 (
     exit /b 1
 )
 
-if not exist "node_modules\.bin\tsc.cmd" (
+rem --- Detecter si une (re)installation est necessaire : node_modules
+rem     incomplet, absent, OU un package.json plus recent que le
+rem     pnpm-lock.yaml (signe qu'une dependance a ete ajoutee/modifiee
+rem     depuis la derniere installation, ex: mise a jour de StreamDesk) ---
+set "NEED_INSTALL=0"
+if not exist "node_modules\.bin\tsc.cmd" set "NEED_INSTALL=1"
+if not exist "pnpm-lock.yaml" set "NEED_INSTALL=1"
+
+if "%NEED_INSTALL%"=="0" (
+    set "LOCK_STATE=OK"
+    for /f "usebackq delims=" %%r in (`powershell -NoProfile -Command "$lock = (Get-Item 'pnpm-lock.yaml').LastWriteTimeUtc; $newest = (Get-ChildItem -Recurse -Filter package.json -File | Where-Object { $_.FullName -notmatch '\\node_modules\\' } | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1).LastWriteTimeUtc; if ($newest -gt $lock) { 'STALE' } else { 'OK' }"`) do set "LOCK_STATE=%%r"
+    if "!LOCK_STATE!"=="STALE" set "NEED_INSTALL=1"
+)
+
+if "%NEED_INSTALL%"=="1" (
     echo.
-    echo Installation des dependances, cela peut prendre plusieurs minutes...
-    echo ^(le dossier node_modules existe peut-etre deja mais est incomplet : c'est normal apres une premiere tentative interrompue^)
+    echo Installation ^(ou mise a jour^) des dependances, cela peut prendre plusieurs minutes...
+    echo ^(node_modules absent/incomplet, ou une dependance a change depuis la derniere installation^)
     echo.
     call pnpm install
     if errorlevel 1 (
@@ -115,7 +129,7 @@ if not exist "node_modules\.bin\tsc.cmd" (
         exit /b 1
     )
 ) else (
-    echo Dependances deja installees.
+    echo Dependances deja a jour.
     echo ^(Pour forcer une reinstallation complete : supprimez le dossier node_modules^)
 )
 
